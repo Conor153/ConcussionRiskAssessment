@@ -17,8 +17,8 @@ deactivate
 
 
 # Packages : Note Deveplment device GPU AMD Radeon RX 7700 XT
-install openCV
-pip3 install opencv-python
-pip install torch torchvision
-pip install torch-directml
-pip install ultralytics
+- install openCV
+- pip3 install opencv-python
+- pip install torch torchvision
+- pip install torch-directml
+- pip install ultralytics
