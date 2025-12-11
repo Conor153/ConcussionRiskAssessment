@@ -128,7 +128,7 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
 
 
 #Main video processing
-capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/Concussion Hits/CJStroudConcussion.mp4')
+capture = cv.VideoCapture('../videos/CJStroudConcussion.mp4')
 
 #Extract team colours from first frame
 ret, first_frame = capture.read()
