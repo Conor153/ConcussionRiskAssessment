@@ -7,7 +7,7 @@ Final Year Capstone computer vision project to analyse the risk of concussion fr
 Python 3.11.7
 
 # Create Environment
-python -m concussionRisk_Environment  
+python -m venv .venv
 
 # Activate Environment on Command Prompt with
 .\.venv\Scripts\activate.bat
