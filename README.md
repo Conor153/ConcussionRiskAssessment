@@ -12,13 +12,11 @@ python -m venv .venv
 # Activate Environment on Command Prompt with
 .\.venv\Scripts\activate.bat
 
-# Deactivate on Command Prompt with with
-deactivate
-
 
 # Packages : Note Deveplment device GPU AMD Radeon RX 7700 XT
-- install openCV
 - pip3 install opencv-python
-- pip install torch torchvision
-- pip install torch-directml
 - pip install ultralytics
+- pip install scikit-learn
+
+- # Deactivate on Command Prompt with with
+deactivate
