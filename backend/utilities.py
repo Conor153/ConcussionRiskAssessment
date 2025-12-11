@@ -31,7 +31,7 @@ def get_dominant_colour(frame, bbox):
     #Get the height of the players box
     height = playerBox.shape[0]
     #Get the upperpart of the player body to get jersey colour
-    torso = playerBox[int(height*0.20):int(height*0.45), :]
+    torso = playerBox[int(height*0.30):int(height*0.5), :]
     
     #Convert the jersey colour to HSV
     hsv_roi = cv.cvtColor(torso, cv.COLOR_BGR2HSV)

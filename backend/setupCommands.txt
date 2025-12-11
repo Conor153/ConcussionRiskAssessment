@@ -1,0 +1,25 @@
+//Environment Setup  Windows
+
+Python 3.11.7
+
+//Create Environment
+python -m venv .venv 
+
+// Activate Environment on Command Prompt with
+.\.venv\Scripts\activate.bat
+
+
+//Packages
+#Install OpenCV for image processing
+pip3 install opencv-python
+
+#Install ultralytics for YOLO object detection
+pip install ultralytics
+
+#Install ultralytics for YOLO object detection
+pip install scikit-learn
+
+
+
+//Deactivate on Command Prompt with with
+deactivate
