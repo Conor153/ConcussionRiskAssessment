@@ -119,22 +119,26 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     # Calculate Euclidean distance in BGR space
     dist1 = np.linalg.norm(colour_bgr - team1_colour)
     dist2 = np.linalg.norm(colour_bgr - team2_colour)
-    
+
     if dist1 < dist2:
         return "Team 1", (0, 255, 255)
     else:
         return "Team 2", (255, 255, 0)
     
+def get_velocity_traveled():
+
+def get_displacement_traveled():
+    
+def get_time_traveled():
+    
+def get_acceleration():
 
 
 #Main video processing
 capture = cv.VideoCapture('../videos/CJStroudConcussion.mp4')
-
 #Extract team colours from first frame
 ret, first_frame = capture.read()
-
 team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
-
 #Track statistics
 team_counts = defaultdict(int)
 
@@ -142,10 +146,10 @@ team_counts = defaultdict(int)
 while True:
     isTrue, frame = capture.read()
     # Run YOLO detection
+    #results = model.track(source=frame, show=true, tracker="bytetrack.yaml")
     results = model(frame)
     result = results[0]
     boxes = result.boxes
-    
     #Process each detected person
     for box in boxes:
         cls = int(box.cls[0])
