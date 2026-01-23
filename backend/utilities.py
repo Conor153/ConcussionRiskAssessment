@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math 
 from ultralytics import YOLO
 from sklearn.cluster import KMeans
 from collections import defaultdict
@@ -125,13 +126,33 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     else:
         return "Team 2", (255, 255, 0)
     
-def get_velocity_traveled():
+def get_velocity(frame, bbox):
+    displacement = get_displacement(frame, bbox)
+    time = get_time()
 
-def get_displacement_traveled():
+    velocity = displacement/time
+    return velocity
+
+#Get the displacement of the player
+def get_displacement(frame, bbox):
+    #Get X and Y from the Player box
+    x1, y1, x2, y2 = map(int, bbox)
+
+    #Get the centre of both X and Y at begining and at the end
+    initial_X_position = (x1+x2)/2
+    initial_Y_position = (y1+y2)/2
+    final_X_position = (x1+x2)/2
+    final_Y_position = (y1+y2)/2
+
+    displacement = math.sqrt(math.pow(final_X_position - initial_X_position) + math.pow(final_Y_position - initial_Y_position))
+    return displacement
     
-def get_time_traveled():
+    
+def get_time():
+    frame, bbox
     
 def get_acceleration():
+    frame, bbox
 
 
 #Main video processing
