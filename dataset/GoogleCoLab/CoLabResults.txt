@@ -1,0 +1,348 @@
+#Commands
+
+%cd /content/datasets
+!yolo task=detect mode=train model=yolo11n.pt \ data=/content/datasets/NFL_Collisions-2/data.yaml \ epochs=30 imgsz=640 plots=True split=0.2
+
+#Result
+
+
+                   from  n    params  module                                       arguments                     
+  0                  -1  1       464  ultralytics.nn.modules.conv.Conv             [3, 16, 3, 2]                 
+  1                  -1  1      4672  ultralytics.nn.modules.conv.Conv             [16, 32, 3, 2]                
+  2                  -1  1      6640  ultralytics.nn.modules.block.C3k2            [32, 64, 1, False, 0.25]      
+  3                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]                
+  4                  -1  1     26080  ultralytics.nn.modules.block.C3k2            [64, 128, 1, False, 0.25]     
+  5                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]              
+  6                  -1  1     87040  ultralytics.nn.modules.block.C3k2            [128, 128, 1, True]           
+  7                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]              
+  8                  -1  1    346112  ultralytics.nn.modules.block.C3k2            [256, 256, 1, True]           
+  9                  -1  1    164608  ultralytics.nn.modules.block.SPPF            [256, 256, 5]                 
+ 10                  -1  1    249728  ultralytics.nn.modules.block.C2PSA           [256, 256, 1]                 
+ 11                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 12             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 13                  -1  1    111296  ultralytics.nn.modules.block.C3k2            [384, 128, 1, False]          
+ 14                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 15             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 16                  -1  1     32096  ultralytics.nn.modules.block.C3k2            [256, 64, 1, False]           
+ 17                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]                
+ 18            [-1, 13]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 19                  -1  1     86720  ultralytics.nn.modules.block.C3k2            [192, 128, 1, False]          
+ 20                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]              
+ 21            [-1, 10]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 22                  -1  1    378880  ultralytics.nn.modules.block.C3k2            [384, 256, 1, True]           
+ 23        [16, 19, 22]  1    431257  ultralytics.nn.modules.head.Detect           [3, 16, None, [64, 128, 256]] 
+YOLO11n summary: 182 layers, 2,590,425 parameters, 2,590,409 gradients, 6.4 GFLOPs
+
+Transferred 448/499 items from pretrained weights
+Freezing layer 'model.23.dfl.conv.weight'
+AMP: running Automatic Mixed Precision (AMP) checks...
+AMP: checks passed ✅
+train: Fast image access ✅ (ping: 0.0±0.0 ms, read: 1102.3±430.4 MB/s, size: 25.5 KB)
+train: Scanning /content/datasets/NFL_Collisions-2/train/labels.cache... 859 images, 0 backgrounds, 0 corrupt: 100% ━━━━━━━━━━━━ 859/859 138.6Mit/s 0.0s
+train: /content/datasets/NFL_Collisions-2/train/images/AZ26NormalCamera_mp4-0003_jpg.rf.255e653c3b38345b51efe8d6735fcbe8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AZ26NormalCamera_mp4-0008_jpg.rf.95dc36343fee9ef2c2bdb92623805b76.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AZvLARNormalCamera_mp4-0001_jpg.rf.f260da3b5001f3b80ce6242561ea8b63.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Akins88Texans_mp4-0005_jpg.rf.45899f06bbc0f31cbfe882a91bdb8e0d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AndyDaltonSlowMoSideCamera_mp4-0005_jpg.rf.57bfdd810b1e741cc12aba2ce1f0c36f.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AnzaloneNormalCamera_mp4-0006_jpg.rf.5feb9917597ad58239d8165b55d3df44.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AnzaloneNormalCamera_mp4-0007_jpg.rf.1e0ddd0e77e4ea7107ee6340edf83061.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BarnesNormalCamera_mp4-0005_jpg.rf.72b4a8fb53504df8dd0b603d29c043d5.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsNormalCamera_mp4-0004_jpg.rf.3acd86807915e4bda0b37ef86d027838.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsPackersFumbleNormalCamera_mp4-0004_jpg.rf.9a38ade302bce537593479e0b148901f.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsPackersFumbleNormalCamera_mp4-0005_jpg.rf.277714434a7871ac01248938e2101713.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsvTBNormalCamera_mp4-0013_jpg.rf.0bcff151c35b47c687f4960817e3cd9b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsvTBNormalCamera_mp4-0016_jpg.rf.55f27dad460ed7ee2a4bb46ac2e14585.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BengelsvSteelersCamera_mp4-0000_jpg.rf.ea2c531e1a0847afc0fe03e34483d6e2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0000_jpg.rf.f72e53a68b520b4c3149bc9a484bc927.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0002_jpg.rf.2ac053755ff55f84441ee364fc5fc31e.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0004_jpg.rf.c81fae6085e458bb42affeba944adfe6.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12SideAngle_mp4-0000_jpg.rf.a520035c7c0c95ab7c9e639547fe7e0b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Carolina82_mp4-0001_jpg.rf.14df0967a3fc5d8b020813e2d893654e.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0000_jpg.rf.59854a21c27c615715809c1af14ae009.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0001_jpg.rf.a31b01cbd266a9ae4fb091c65bb0a7fb.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0006_jpg.rf.1a8503652b2a8f285bc80d31c523fec3.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0007_jpg.rf.cca4669e84f5c2ecb93e301d70a88d02.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Comanders10NormalCamera_mp4-0003_jpg.rf.e09f610f7f035711b7c1a447ba5da6ea.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Cowboys13NormalCamera_mp4-0006_jpg.rf.9fce4c53cadec770a6252bbed07a9d02.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DHTitansNormalCamera_mp4-0004_jpg.rf.bf3bcf2b382f6fedf6f12dc90cf8a930.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DakNormalCamera_mp4-0005_jpg.rf.9d402fc7dd0e8af779e424300d0b4ae8.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DakNormalCamera_mp4-0006_jpg.rf.fcbac9b391baf37e5e6943eb35e091d5.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EAGLESdb29_mp4-0002_jpg.rf.a0edf6e19bd2d2875a091bc99a37e349.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EAGLESdb29_mp4-0005_jpg.rf.aeff6efcf0b20bb92f619f9635238902.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EaglesvCommandersRBNormalCamera_mp4-0005_jpg.rf.ca1e43cca31c969279d5e6495e525822.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EngramSideCamera_mp4-0001_jpg.rf.dbd1950ba595bb37369396750e48e613.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JJ18NormalCamera_mp4-0002_jpg.rf.42f4427fdd6c5807f0e789291d9128e0.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JJ18SideCamera_mp4-0004_jpg.rf.1fa4fc46ba866978edec72fbee2eb51b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0017_jpg.rf.b2ae0b47ef29a243121f0ce39bb61bab.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0025_jpg.rf.c060630bb45e07b2669cf2098d21c449.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0026_jpg.rf.1d4f36658d92056cc51ad393efbaf2e8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JoeBurrowSideCamera_mp4-0001_jpg.rf.071cb4569afdc966e4ff3e2ceda7454c.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JoeBurrowSideCamera_mp4-0005_jpg.rf.67bf5f6219255491aaa5ab6079ebc939.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/KMvJetsNormalCamera_mp4-0001_jpg.rf.3c71fdc8320007f08a956cc994955af8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/KMvJetsSideCamera_mp4-0005_jpg.rf.0feffca86c448f67c5d55a29f0221bed.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphBehind_mp4-0000_jpg.rf.916ca43ee5fab0ef14b3758377441893.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphBehind_mp4-0002_jpg.rf.97ef16fae72d37713d15dd587d2bb584.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphFront_mp4-0005_jpg.rf.78c8679ac4666c2b95334170318cb5d2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MalikWillisBackCamera_mp4-0002_jpg.rf.7ba3004a489571c8dc49f321e75d191d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/NixonSideCamera_mp4-0004_jpg.rf.a41f613a2e348449942f4fa776d0989d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Packers81OppositeAngle_mp4-0003_jpg.rf.2d94436e490cb79208d884a2f3faa6bd.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PackersEaglesCamera_mp4-0003_jpg.rf.d4843723045496d826bc4943c649be76.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PackersEaglesScrumFrontCamera_mp4-0004_jpg.rf.cbc844eda917eef0756c9861af6797ca.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PanthersvEaglesNormalCamera_mp4-0004_jpg.rf.5df0e23d604cab4629d7c366213f9fa0.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PanthersvEaglesNormalCamera_mp4-0005_jpg.rf.0f1e403ec3b42e976b17f5488f985bc1.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Patriots42NormalCamera_mp4-0001_jpg.rf.6163eb4245371b1d3149a8edae0dc1da.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PatriotsPuntReturner_mp4-0004_jpg.rf.c3fd5607143162533ec9b406528d98fe.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PopDouglas81NormalCamera_mp4-0008_jpg.rf.25f3daa45fd52a39a7ff0a02c6208ac2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PopDouglas81NormalCamera_mp4-0010_jpg.rf.f0950cca8a8832c8e065304a981df8c3.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Saints28RB_mp4-0006_jpg.rf.83d86dd8e8cbbd44a3b33a01db5d5b1b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Titans80WR_mp4-0000_jpg.rf.73dd200193ad59534bca0882c62d61f7.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Vikings84_mp4-0002_jpg.rf.d4424671854d0b55d38df24073ef0474.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsEndZone_mp4-0002_jpg.rf.e42212b924bebb0d5fc55cd9bd7d8b5c.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsEndZone_mp4-0003_jpg.rf.0b63ee480f7b44e54dffb9cea083f894.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsSmithJr_mp4-0004_jpg.rf.1b6650617473f908bb247d986a3b10be.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ZWvBillsNormalCamera_mp4-0000_jpg.rf.564a33bb2b75932419889ecec53c5a9d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ZWvBillsNormalCamera_mp4-0003_jpg.rf.43dee010658b1ae30137442aafba6ea8.jpg: 1 duplicate labels removed
+albumentations: Blur(p=0.01, blur_limit=(3, 7)), MedianBlur(p=0.01, blur_limit=(3, 7)), ToGray(p=0.01, method='weighted_average', num_output_channels=3), CLAHE(p=0.01, clip_limit=(1.0, 4.0), tile_grid_size=(8, 8))
+val: Fast image access ✅ (ping: 0.0±0.0 ms, read: 605.0±236.7 MB/s, size: 21.5 KB)
+val: Scanning /content/datasets/NFL_Collisions-2/train/labels.cache... 859 images, 0 backgrounds, 0 corrupt: 100% ━━━━━━━━━━━━ 859/859 39.6Mit/s 0.0s
+train: /content/datasets/NFL_Collisions-2/train/images/AZ26NormalCamera_mp4-0003_jpg.rf.255e653c3b38345b51efe8d6735fcbe8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AZ26NormalCamera_mp4-0008_jpg.rf.95dc36343fee9ef2c2bdb92623805b76.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AZvLARNormalCamera_mp4-0001_jpg.rf.f260da3b5001f3b80ce6242561ea8b63.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Akins88Texans_mp4-0005_jpg.rf.45899f06bbc0f31cbfe882a91bdb8e0d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AndyDaltonSlowMoSideCamera_mp4-0005_jpg.rf.57bfdd810b1e741cc12aba2ce1f0c36f.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AnzaloneNormalCamera_mp4-0006_jpg.rf.5feb9917597ad58239d8165b55d3df44.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/AnzaloneNormalCamera_mp4-0007_jpg.rf.1e0ddd0e77e4ea7107ee6340edf83061.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BarnesNormalCamera_mp4-0005_jpg.rf.72b4a8fb53504df8dd0b603d29c043d5.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsNormalCamera_mp4-0004_jpg.rf.3acd86807915e4bda0b37ef86d027838.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsPackersFumbleNormalCamera_mp4-0004_jpg.rf.9a38ade302bce537593479e0b148901f.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsPackersFumbleNormalCamera_mp4-0005_jpg.rf.277714434a7871ac01248938e2101713.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsvTBNormalCamera_mp4-0013_jpg.rf.0bcff151c35b47c687f4960817e3cd9b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BearsvTBNormalCamera_mp4-0016_jpg.rf.55f27dad460ed7ee2a4bb46ac2e14585.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/BengelsvSteelersCamera_mp4-0000_jpg.rf.ea2c531e1a0847afc0fe03e34483d6e2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0000_jpg.rf.f72e53a68b520b4c3149bc9a484bc927.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0002_jpg.rf.2ac053755ff55f84441ee364fc5fc31e.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12BackAngle_mp4-0004_jpg.rf.c81fae6085e458bb42affeba944adfe6.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Browns12SideAngle_mp4-0000_jpg.rf.a520035c7c0c95ab7c9e639547fe7e0b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Carolina82_mp4-0001_jpg.rf.14df0967a3fc5d8b020813e2d893654e.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0000_jpg.rf.59854a21c27c615715809c1af14ae009.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0001_jpg.rf.a31b01cbd266a9ae4fb091c65bb0a7fb.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0006_jpg.rf.1a8503652b2a8f285bc80d31c523fec3.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ChicagovMNNormalCamera_mp4-0007_jpg.rf.cca4669e84f5c2ecb93e301d70a88d02.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Comanders10NormalCamera_mp4-0003_jpg.rf.e09f610f7f035711b7c1a447ba5da6ea.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Cowboys13NormalCamera_mp4-0006_jpg.rf.9fce4c53cadec770a6252bbed07a9d02.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DHTitansNormalCamera_mp4-0004_jpg.rf.bf3bcf2b382f6fedf6f12dc90cf8a930.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DakNormalCamera_mp4-0005_jpg.rf.9d402fc7dd0e8af779e424300d0b4ae8.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/DakNormalCamera_mp4-0006_jpg.rf.fcbac9b391baf37e5e6943eb35e091d5.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EAGLESdb29_mp4-0002_jpg.rf.a0edf6e19bd2d2875a091bc99a37e349.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EAGLESdb29_mp4-0005_jpg.rf.aeff6efcf0b20bb92f619f9635238902.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EaglesvCommandersRBNormalCamera_mp4-0005_jpg.rf.ca1e43cca31c969279d5e6495e525822.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/EngramSideCamera_mp4-0001_jpg.rf.dbd1950ba595bb37369396750e48e613.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JJ18NormalCamera_mp4-0002_jpg.rf.42f4427fdd6c5807f0e789291d9128e0.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JJ18SideCamera_mp4-0004_jpg.rf.1fa4fc46ba866978edec72fbee2eb51b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0017_jpg.rf.b2ae0b47ef29a243121f0ce39bb61bab.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0025_jpg.rf.c060630bb45e07b2669cf2098d21c449.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JasonKelceNormalCamera_mp4-0026_jpg.rf.1d4f36658d92056cc51ad393efbaf2e8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JoeBurrowSideCamera_mp4-0001_jpg.rf.071cb4569afdc966e4ff3e2ceda7454c.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/JoeBurrowSideCamera_mp4-0005_jpg.rf.67bf5f6219255491aaa5ab6079ebc939.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/KMvJetsNormalCamera_mp4-0001_jpg.rf.3c71fdc8320007f08a956cc994955af8.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/KMvJetsSideCamera_mp4-0005_jpg.rf.0feffca86c448f67c5d55a29f0221bed.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphBehind_mp4-0000_jpg.rf.916ca43ee5fab0ef14b3758377441893.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphBehind_mp4-0002_jpg.rf.97ef16fae72d37713d15dd587d2bb584.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MRudolphFront_mp4-0005_jpg.rf.78c8679ac4666c2b95334170318cb5d2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/MalikWillisBackCamera_mp4-0002_jpg.rf.7ba3004a489571c8dc49f321e75d191d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/NixonSideCamera_mp4-0004_jpg.rf.a41f613a2e348449942f4fa776d0989d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Packers81OppositeAngle_mp4-0003_jpg.rf.2d94436e490cb79208d884a2f3faa6bd.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PackersEaglesCamera_mp4-0003_jpg.rf.d4843723045496d826bc4943c649be76.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PackersEaglesScrumFrontCamera_mp4-0004_jpg.rf.cbc844eda917eef0756c9861af6797ca.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PanthersvEaglesNormalCamera_mp4-0004_jpg.rf.5df0e23d604cab4629d7c366213f9fa0.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PanthersvEaglesNormalCamera_mp4-0005_jpg.rf.0f1e403ec3b42e976b17f5488f985bc1.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Patriots42NormalCamera_mp4-0001_jpg.rf.6163eb4245371b1d3149a8edae0dc1da.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PatriotsPuntReturner_mp4-0004_jpg.rf.c3fd5607143162533ec9b406528d98fe.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PopDouglas81NormalCamera_mp4-0008_jpg.rf.25f3daa45fd52a39a7ff0a02c6208ac2.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/PopDouglas81NormalCamera_mp4-0010_jpg.rf.f0950cca8a8832c8e065304a981df8c3.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Saints28RB_mp4-0006_jpg.rf.83d86dd8e8cbbd44a3b33a01db5d5b1b.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Titans80WR_mp4-0000_jpg.rf.73dd200193ad59534bca0882c62d61f7.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/Vikings84_mp4-0002_jpg.rf.d4424671854d0b55d38df24073ef0474.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsEndZone_mp4-0002_jpg.rf.e42212b924bebb0d5fc55cd9bd7d8b5c.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsEndZone_mp4-0003_jpg.rf.0b63ee480f7b44e54dffb9cea083f894.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/VikingsSmithJr_mp4-0004_jpg.rf.1b6650617473f908bb247d986a3b10be.jpg: 2 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ZWvBillsNormalCamera_mp4-0000_jpg.rf.564a33bb2b75932419889ecec53c5a9d.jpg: 1 duplicate labels removed
+train: /content/datasets/NFL_Collisions-2/train/images/ZWvBillsNormalCamera_mp4-0003_jpg.rf.43dee010658b1ae30137442aafba6ea8.jpg: 1 duplicate labels removed
+Plotting labels to /content/datasets/runs/detect/train5/labels.jpg... 
+optimizer: 'optimizer=auto' found, ignoring 'lr0=0.01' and 'momentum=0.937' and determining best 'optimizer', 'lr0' and 'momentum' automatically... 
+optimizer: MuSGD(lr=0.001429, momentum=0.9) with parameter groups 81 weight(decay=0.0), 88 weight(decay=0.0005), 87 bias(decay=0.0)
+Image sizes 640 train, 640 val
+Using 2 dataloader workers
+Logging results to /content/datasets/runs/detect/train5
+Starting training for 30 epochs...
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       1/30      5.37G      1.828      3.506       1.44        857        640: 100% ━━━━━━━━━━━━ 54/54 1.1s/it 56.9s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.0it/s 13.5s
+                   all        859      26103     0.0212      0.215     0.0782     0.0446
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       2/30      5.39G       1.78      2.631      1.357        620        640: 100% ━━━━━━━━━━━━ 54/54 1.6it/s 33.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.1s
+                   all        859      26103      0.458      0.306      0.322      0.169
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       3/30      5.39G      1.689      1.797      1.288        645        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.8s
+                   all        859      26103      0.516      0.487      0.464       0.25
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       4/30      5.39G      1.572      1.512      1.222        580        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.6s
+                   all        859      26103      0.612      0.526      0.552      0.306
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       5/30       5.4G      1.487      1.381      1.196        791        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 31.3s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.7s
+                   all        859      26103      0.675      0.546      0.602      0.343
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       6/30      5.85G      1.459      1.304      1.169        698        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.5s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.4s
+                   all        859      26103      0.717      0.582      0.643      0.372
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       7/30       6.3G      1.426      1.232      1.152        640        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.1s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.7s
+                   all        859      26103      0.725      0.605      0.667      0.391
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       8/30      6.31G      1.391      1.175       1.13        802        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 32.4s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.7it/s 10.1s
+                   all        859      26103      0.743      0.598      0.675        0.4
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+       9/30      6.33G      1.375      1.148      1.121        591        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.4s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.2s
+                   all        859      26103      0.757      0.617      0.693      0.414
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      10/30      6.33G      1.359      1.139      1.111        442        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.5s
+                   all        859      26103      0.768      0.626      0.703      0.426
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      11/30      6.33G       1.32      1.107      1.105        615        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.5s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.5it/s 10.8s
+                   all        859      26103      0.754       0.64       0.71      0.433
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      12/30      6.33G      1.332      1.088        1.1        722        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 31.4s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.5s
+                   all        859      26103      0.766      0.651      0.723      0.442
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      13/30      6.79G      1.312      1.079      1.093        632        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.5s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.1s
+                   all        859      26103      0.773      0.652      0.727       0.45
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      14/30      6.79G      1.308      1.052      1.086        669        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 31.0s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.6it/s 10.5s
+                   all        859      26103      0.782      0.658      0.734      0.454
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      15/30      6.79G      1.311      1.054      1.084        668        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 31.1s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.6s
+                   all        859      26103       0.78       0.66      0.738      0.456
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      16/30      6.79G      1.294      1.039      1.084        373        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 30.9s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.4s
+                   all        859      26103       0.78      0.663       0.74      0.461
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      17/30      6.81G      1.291      1.027      1.079        642        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.3s
+                   all        859      26103      0.787       0.67      0.747      0.468
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      18/30      6.82G      1.264      1.007      1.067        602        640: 100% ━━━━━━━━━━━━ 54/54 1.7it/s 31.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.4s
+                   all        859      26103       0.79      0.674      0.751      0.472
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      19/30      6.82G      1.265      1.002      1.066        563        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.3s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.3it/s 11.6s
+                   all        859      26103      0.789      0.678      0.753      0.474
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      20/30      6.82G       1.25     0.9943      1.065        766        640: 100% ━━━━━━━━━━━━ 54/54 1.8it/s 30.1s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.4it/s 11.5s
+                   all        859      26103      0.792      0.678      0.755      0.478
+Closing dataloader mosaic
+albumentations: Blur(p=0.01, blur_limit=(3, 7)), MedianBlur(p=0.01, blur_limit=(3, 7)), ToGray(p=0.01, method='weighted_average', num_output_channels=3), CLAHE(p=0.01, clip_limit=(1.0, 4.0), tile_grid_size=(8, 8))
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      21/30      6.82G      1.253      1.073      1.077        350        640: 100% ━━━━━━━━━━━━ 54/54 2.3it/s 23.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.1it/s 8.6s
+                   all        859      26103      0.768      0.676      0.741      0.462
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      22/30      6.82G      1.223      1.002      1.058        304        640: 100% ━━━━━━━━━━━━ 54/54 2.6it/s 20.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.4it/s 7.9s
+                   all        859      26103      0.786      0.671      0.749      0.468
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      23/30      6.82G      1.204     0.9814      1.054        321        640: 100% ━━━━━━━━━━━━ 54/54 2.6it/s 20.6s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.6it/s 7.5s
+                   all        859      26103      0.791      0.678      0.755      0.474
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      24/30      6.82G      1.181     0.9558      1.045        385        640: 100% ━━━━━━━━━━━━ 54/54 2.5it/s 21.8s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.0it/s 8.9s
+                   all        859      26103      0.793      0.679      0.756      0.476
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      25/30      6.82G      1.184     0.9505      1.045        238        640: 100% ━━━━━━━━━━━━ 54/54 2.7it/s 20.0s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.2it/s 8.6s
+                   all        859      26103      0.794      0.684       0.76      0.481
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      26/30      6.82G      1.173     0.9395      1.041        264        640: 100% ━━━━━━━━━━━━ 54/54 2.6it/s 21.0s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.6it/s 7.4s
+                   all        859      26103      0.796      0.686      0.764      0.486
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      27/30      6.82G      1.188     0.9427      1.037        325        640: 100% ━━━━━━━━━━━━ 54/54 2.6it/s 20.7s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.3it/s 8.3s
+                   all        859      26103      0.799      0.689      0.764      0.485
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      28/30      6.82G       1.17     0.9305      1.035        236        640: 100% ━━━━━━━━━━━━ 54/54 2.7it/s 19.9s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.2it/s 8.4s
+                   all        859      26103      0.799       0.69      0.766      0.488
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      29/30      6.82G      1.161       0.93      1.032        319        640: 100% ━━━━━━━━━━━━ 54/54 2.7it/s 19.7s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.1it/s 8.6s
+                   all        859      26103        0.8      0.688      0.766      0.488
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+      30/30      6.82G      1.165     0.9272      1.035        304        640: 100% ━━━━━━━━━━━━ 54/54 2.6it/s 20.9s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 3.7it/s 7.4s
+                   all        859      26103      0.799       0.69      0.766      0.489
+
+30 epochs completed in 0.328 hours.
+Optimizer stripped from /content/datasets/runs/detect/train5/weights/last.pt, 5.4MB
+Optimizer stripped from /content/datasets/runs/detect/train5/weights/best.pt, 5.4MB
+
+Validating /content/datasets/runs/detect/train5/weights/best.pt...
+Ultralytics 8.4.7 🚀 Python-3.12.12 torch-2.9.0+cu126 CUDA:0 (Tesla T4, 15095MiB)
+YOLO11n summary (fused): 101 layers, 2,582,737 parameters, 0 gradients, 6.3 GFLOPs
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 27/27 2.1it/s 12.8s
+                   all        859      26103        0.8       0.69      0.766      0.489
+                Helmet        859       8008      0.748      0.549      0.632      0.351
+                Jersey        859       8720      0.797      0.709      0.793      0.476
+                Player        859       9375      0.853      0.811      0.874       0.64
+Speed: 0.1ms preprocess, 1.5ms inference, 0.0ms loss, 3.1ms postprocess per image
+Results saved to /content/datasets/runs/detect/train5
+
+
+#best
+

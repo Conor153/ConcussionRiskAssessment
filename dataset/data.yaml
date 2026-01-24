@@ -8,6 +8,6 @@ names: ['Helmet', 'Jersey', 'Player']
 roboflow:
   workspace: concussion-risk-analysis
   project: nfl_collisions-kxmoy
-  version: 1
+  version: 3
   license: CC BY 4.0
-  url: https://universe.roboflow.com/concussion-risk-analysis/nfl_collisions-kxmoy/dataset/1
+  url: https://universe.roboflow.com/concussion-risk-analysis/nfl_collisions-kxmoy/dataset/3

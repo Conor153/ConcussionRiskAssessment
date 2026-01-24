@@ -1,0 +1,2 @@
+# Command for running Trainning
+yolo detect train data=data.yaml model=yolo11n.pt epochs=50 imgsz=640 split=0.2 batch=8 device=1 plots=True project=AMD name=AMDv1Train

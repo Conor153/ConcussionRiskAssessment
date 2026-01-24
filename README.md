@@ -18,5 +18,13 @@ python -m venv .venv
 - pip install ultralytics
 - pip install scikit-learn
 
+# AMD Device
+Requires
+driver 25.11.1
+RX 7700 XT
+ROCM 7.10.0 preview
+- python -m pip install --index-url https://repo.amd.com/rocm/whl gfx110X-dgpu/ "rocm[libraries,devel]"
+python -m pip install --index-url https://repo.amd.com/rocm/whl/gfx110X-dgpu/ torch torchvision torchaudio
+
 - # Deactivate on Command Prompt with with
 deactivate

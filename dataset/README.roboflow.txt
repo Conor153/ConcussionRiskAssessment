@@ -1,8 +1,8 @@
 
-NFL_Collisions - v1 2026-01-23 1:12pm
+NFL_Collisions - v3 V3-80Train_10Val_10Test_Split
 ==============================
 
-This dataset was exported via roboflow.com on January 23, 2026 at 1:16 PM GMT
+This dataset was exported via roboflow.com on January 24, 2026 at 4:36 PM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
