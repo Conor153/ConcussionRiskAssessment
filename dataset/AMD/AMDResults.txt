@@ -1,2 +1,24 @@
 # Command for running Trainning
-yolo detect train data=data.yaml model=yolo11n.pt epochs=50 imgsz=640 split=0.2 batch=8 device=1 plots=True project=AMD name=AMDv1Train
+yolo detect train data=data.yaml model=yolo11n.pt epochs=10 imgsz=640 split=0.2 batch=4 device=cpu plots=True project=AMD name=AMDv1Train
+
+
+Epoch 1
+Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 3.1it/s 4.5s
+all        109       3293      0.544      0.441      0.466      0.239
+
+
+Epoch 2
+14/14 3.9it/s 3.6s
+                   all        109       3293       0.66      0.517      0.564      0.305
+
+Epoch 3
+Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 3.                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 3.7it/s 3.7s
+all        109       3293      0.697      0.538        0.6      0.329
+
+Epoch 4
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 3.6it/s 3.9s
+                   all        109       3293      0.711      0.546      0.615      0.345
+
+Epoch 5
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 3.7it/s 3.7s
+                   all        109       3293      0.745       0.58      0.662      0.383
