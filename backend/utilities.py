@@ -1,14 +1,14 @@
 import cv2 as cv
 import numpy as np
+from time import time
+from perspective_transformation import BirdsEyeView
 import math 
 from ultralytics import YOLO
 from sklearn.cluster import KMeans
-from collections import defaultdict
-
-
+from collections import defaultdict, deque
 
 #mode is a pretrained Yolo Model
-model = YOLO('yolo11n.pt')
+model = YOLO('yolo11s.pt')
 
 #Function to resize the window frame
 def rescaleFrame(frame, scale=0.75):
@@ -104,9 +104,9 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     dist1 = np.linalg.norm(colour_bgr - team1_colour)
     dist2 = np.linalg.norm(colour_bgr - team2_colour)
     if dist1 < dist2:
-        return "Team 1", (0, 255, 255)
+        return "Team 1", (0, 0, 255)
     else:
-        return "Team 2", (255, 255, 0)
+        return "Team 2", (255, 0, 0)
 
 #Function to calculate the velocity 
 def get_velocity(frame, bbox):
@@ -166,50 +166,69 @@ def get_camera_movement(frames):
     grey = cv.cvtColor(frames[0],cv.COLOR_BGR2GRAY)
 
 
-
 def read_video():
     #Main video processing
-    isTrue, capture = cv.VideoCapture('../videos/CJStroudConcussion.mp4')
-    frames = []
+    capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
+    #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
     #Extract team colours from first frame
-    first_frame = capture.read()
+    isTrue, first_frame = capture.read()
     team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
     #Track statistics
     team_counts = defaultdict(int)
+    #Target is full NFL field size
+    #Source is the area within the videp
+    target_width = 109.7 #meters of NFL Field endzone to endzone
+    target_height = 48.8 #meters of NFL Field sideline to sideline
+    source = np.array([[200, 50],[1720, 50],[1880, 1000],[40, 1000]])
+    target = np.array([[0, 0], [target_width-1, 0], [target_width-1, target_height-1], [0, target_height-1]])
+    transformation = BirdsEyeView(source, target)
+    
+
     #Process video
     while True:
         isTrue, frame = capture.read()
         if not isTrue:
             break
         # Run Object Detection detection
-        #trackingID = model.track(source=frame, show=True, tracker="bytetrack.yaml")
-        results = model(frame)
+        current_time = time()
+        results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="bytetrack.yaml")  
         result = results[0]
         boxes = result.boxes
+        #Transofrm the points of the bounding box 
+        transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
         #Process each detected person
-        for box in boxes:
+        for i, box in enumerate(boxes):
             cls = int(box.cls[0])
             if cls == 0:
                 bbox = box.xyxy[0].cpu().numpy()
                 x1, y1, x2, y2 = map(int, bbox)
-                
+                x,y = transformed_coords[i]
+                track_id = int(box.id[0]) if box.id is not None else None
+                #Save the transformed co-ordinates of the box at its id position
+                label = f"ID:{track_id}"
+                speed = transformation.calculate_speed(track_id, (x, y), current_time)
+                label = f"ID:{track_id} Speed{speed} kph"
+
                 #Get dominant colour
                 colour = get_dominant_colour(frame, bbox)
                 
                 #Classify team
                 team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
                 team_counts[team_label] += 1
-                
-                #Draw bounding box
-                x_centre_position, y_centre_position = get_centre_of_bbox(x1, y1, x2, y2)
-                #cv.ellipse(frame, (x_centre_position, y_centre_position), (int(width), int(width)35%),0,0,360 box_colour, 3)
+
                 cv.rectangle(frame, (x1, y1), (x2, y2), box_colour, 3)
                 
-                #Add label
-                label = f"{team_label} {trackerID}"
-                cv.putText(frame, label, (x1, y1-10),cv.FONT_HERSHEY_SIMPLEX, 0.5, box_colour, 2)
+                #Add label with background for better visibility
+                label_text = f"{team_label} {label}"
+                                #Add label with background for better visibility
+                label_text = f"{team_label} {label}"
+
+            # Draw background rectangle
+            cv.rectangle(frame,(x1, y1 - 5),(x2, y1-20),box_colour,-1)
+            
+            # Draw text on top of background
+            cv.putText(frame,label_text,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
         
-        frames.append(frame)
         #Resize the frame
         frameResized = rescaleFrame(frame, scale=0.75)
         cv.imshow("Team Classification", frameResized)
@@ -219,5 +238,6 @@ def read_video():
 
     capture.release()
     cv.destroyAllWindows()
-    return frames
     
+
+read_video()
