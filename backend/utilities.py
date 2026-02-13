@@ -108,44 +108,6 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     else:
         return "Team 2", (255, 0, 0)
 
-#Function to calculate the velocity 
-def get_velocity(frame, bbox):
-    displacement = get_displacement(frame, bbox)
-    time = get_time()
-    velocity = displacement/time
-    return velocity
-
-#Function to calculate the displacement
-def get_displacement(frame, bbox):
-    #Get X and Y from the Player box
-    x1, y1, x2, y2 = map(int, bbox)
-    #Get the centre of both X and Y at begining and at the end
-    initial_X_position, initial_Y_position = get_centre_of_bbox(x1, y1, x2, y2)
-    final_X_position, final_Y_position = get_centre_of_bbox(x1, y1, x2, y2)
-    displacement = math.sqrt(math.pow(final_X_position - initial_X_position) + math.pow(final_Y_position - initial_Y_position))
-    return displacement
-
-def get_centre_of_bbox(x1, y1, x2, y2):
-    return (x1+x2)/2, (y1+y2)/2
-    
-    
-#Function to calculate the Time
-def get_time():
-    time = frame_count/fps
-    return time
-
-#Function to calculate the acceleration
-def get_acceleration():
-    acceleration = get_velocity()/get_time()
-    return acceleration 
-
-def calculate_GForce():
-    frame, bbox
-    gForce = get_acceleration()/9.81
-    #Green      
-    #Yellow     
-    #Red        
-
 def calculate_angular_acceleration():
     angular_acceleration = calculate_angular_velocity()/get_time()
     #Green      
@@ -164,6 +126,8 @@ def calculate_angular_velocity():
 def get_camera_movement(frames):
     camera_movement = [[0,0]*len(frames)]
     grey = cv.cvtColor(frames[0],cv.COLOR_BGR2GRAY)
+
+
 
 
 def read_video():
@@ -194,7 +158,7 @@ def read_video():
         results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="bytetrack.yaml")  
         result = results[0]
         boxes = result.boxes
-        #Transofrm the points of the bounding box 
+        #Transform the points of the bounding box 
         transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
         #Process each detected person
         for i, box in enumerate(boxes):
@@ -207,7 +171,9 @@ def read_video():
                 #Save the transformed co-ordinates of the box at its id position
                 label = f"ID:{track_id}"
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
-                label = f"ID:{track_id} Speed{speed} kph"
+                acceleration = transformation.calculate_acceleration(track_id, (x, y), current_time)
+                g_force = transformation.calculate_GForce(track_id, (x, y), current_time)
+                label = f"ID:{track_id} Speed{speed} Kph | Acceleration:{acceleration} MS^2 | G-Force:{g_force} G"
 
                 #Get dominant colour
                 colour = get_dominant_colour(frame, bbox)
