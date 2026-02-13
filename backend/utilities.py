@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math 
 from ultralytics import YOLO
 from sklearn.cluster import KMeans
 from collections import defaultdict
@@ -119,22 +120,46 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     # Calculate Euclidean distance in BGR space
     dist1 = np.linalg.norm(colour_bgr - team1_colour)
     dist2 = np.linalg.norm(colour_bgr - team2_colour)
-    
+
     if dist1 < dist2:
         return "Team 1", (0, 255, 255)
     else:
         return "Team 2", (255, 255, 0)
     
+def get_velocity(frame, bbox):
+    displacement = get_displacement(frame, bbox)
+    time = get_time()
+
+    velocity = displacement/time
+    return velocity
+
+#Get the displacement of the player
+def get_displacement(frame, bbox):
+    #Get X and Y from the Player box
+    x1, y1, x2, y2 = map(int, bbox)
+
+    #Get the centre of both X and Y at begining and at the end
+    initial_X_position = (x1+x2)/2
+    initial_Y_position = (y1+y2)/2
+    final_X_position = (x1+x2)/2
+    final_Y_position = (y1+y2)/2
+
+    displacement = math.sqrt(math.pow(final_X_position - initial_X_position) + math.pow(final_Y_position - initial_Y_position))
+    return displacement
+    
+    
+def get_time():
+    frame, bbox
+    
+def get_acceleration():
+    frame, bbox
 
 
 #Main video processing
 capture = cv.VideoCapture('../videos/CJStroudConcussion.mp4')
-
 #Extract team colours from first frame
 ret, first_frame = capture.read()
-
 team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
-
 #Track statistics
 team_counts = defaultdict(int)
 
@@ -142,10 +167,10 @@ team_counts = defaultdict(int)
 while True:
     isTrue, frame = capture.read()
     # Run YOLO detection
+    #results = model.track(source=frame, show=true, tracker="bytetrack.yaml")
     results = model(frame)
     result = results[0]
     boxes = result.boxes
-    
     #Process each detected person
     for box in boxes:
         cls = int(box.cls[0])
