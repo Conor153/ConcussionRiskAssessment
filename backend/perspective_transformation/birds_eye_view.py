@@ -39,15 +39,16 @@ class BirdsEyeView:
     def calculate_speed(self, track_id, position, current_time):
         """Calculate current speed for track_id"""
         #Store a queue of the tracked players position
+        #Declare positions and current_speeds queues
         if track_id not in self.positions:
             self.positions[track_id] = deque(maxlen=10)
         
         if track_id not in self.current_speeds:
             self.current_speeds[track_id] = deque(maxlen=10)
-        
+        #Append x,y and the time it has taken to reach the co-ordinates
         self.positions[track_id].append((position[0], position[1], current_time))
         positions = list(self.positions[track_id])
-        # Need at least 2 points for speed
+        
         if len(positions) < 2:
             self.current_speeds[track_id].append((0.0, current_time))
             return 0.0
@@ -80,7 +81,6 @@ class BirdsEyeView:
     def calculate_acceleration(self, track_id):
         if track_id not in self.acceleration:
             self.acceleration[track_id] = deque(maxlen=10)
-
         speed = list(self.current_speeds[track_id])
 
         if len(speed) < 2:
@@ -93,9 +93,7 @@ class BirdsEyeView:
         else:
             old_speed = speed[0]
             new_speed = speed[-1]
-
-        time_diff = new_speed[1] - old_speed[1]
-            
+        time_diff = new_speed[1] - old_speed[1] 
         if time_diff > 0:
             acceleration = (new_speed[0] - old_speed[0]) / time_diff
             acceleration = acceleration/3.6
@@ -110,4 +108,4 @@ class BirdsEyeView:
             return 0.0
         accel = self.acceleration[track_id][-1]
         g_Force = accel / 9.81
-        return g_Force
+        return abs(g_Force)

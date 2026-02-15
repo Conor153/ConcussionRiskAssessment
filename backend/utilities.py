@@ -6,9 +6,30 @@ import math
 from ultralytics import YOLO
 from sklearn.cluster import KMeans
 from collections import defaultdict, deque
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
-#mode is a pretrained Yolo Model
-model = YOLO('yolo11s.pt')
+
+#model is a pretrained Yolo Model
+#model = YOLO('../models/CoLab_T4/CoLab_T4GPU.pt')
+#model = YOLO('../models/AMDCPUv1TrainYOLON/weights/AMDCPUv1TrainYOLOn.pt')
+#model = YOLO('../models/AMDGPUv1TrainYOLON/weights/AMDGPUv1TrainYOLOn.pt')
+
+model = YOLO('../models/AMDGPUv2TrainYOLOS/weights/AMDGPUTrainYOLOs.pt')
+#model = YOLO('yolo11s-pose.pt')
+#Create Pose Landmarker object
+# BaseOptions = mp.tasks.BaseOptions
+# PoseLandmarker = mp.tasks.vision.PoseLandmarker
+# PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+# FaceLandmarker = mp.tasks.vision.FaceLandmarker
+# FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
+# VisionRunningMode = mp.tasks.vision.RunningMode
+# pose_options = PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path="../models/PoseDetection/pose_landmarker_full.task"), running_mode=VisionRunningMode.IMAGE)
+# face_options = FaceLandmarkerOptions(base_options=BaseOptions(model_asset_path="../models/FaceDetection/face_landmarker.task"), running_mode=VisionRunningMode.IMAGE)
+# pose_landmarker = PoseLandmarker.create_from_options(pose_options)
+# face_landmarker = FaceLandmarker.create_from_options(face_options)
+
 
 #Function to resize the window frame
 def rescaleFrame(frame, scale=0.75):
@@ -108,33 +129,63 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     else:
         return "Team 2", (255, 0, 0)
 
-def calculate_angular_acceleration():
-    angular_acceleration = calculate_angular_velocity()/get_time()
-    #Green      
-    #Yellow     
-    #Red        
+# def calculate_angular_acceleration():
+#     angular_acceleration = calculate_angular_velocity()/get_time()
+#     #Green      
+#     #Yellow     
+#     #Red        
 
-def calculate_angular_displacement(angle_a, angle_B):
-    angular_displacement = angle_a - angle_B
-    return angular_displacement
+# def calculate_angular_displacement(angle_a, angle_B):
+#     angular_displacement = angle_a - angle_B
+#     return angular_displacement
 
-def calculate_angular_velocity():
-    angular_velocity = calculate_angular_displacement()
-    return angular_velocity
-
-
-def get_camera_movement(frames):
-    camera_movement = [[0,0]*len(frames)]
-    grey = cv.cvtColor(frames[0],cv.COLOR_BGR2GRAY)
+# def calculate_angular_velocity():
+#     angular_velocity = calculate_angular_displacement()
+#     return angular_velocity
 
 
+# def get_camera_movement(frames):
+#     camera_movement = [[0,0]*len(frames)]
+#     grey = cv.cvtColor(frames[0],cv.COLOR_BGR2GRAY)
 
+# def pose_estimation(frame, bbox):
+#     x1, y1, x2, y2 = map(int, bbox)
+#     playerImage = frame[y1:y2, x1:x2]
+#     playerImage = cv.cvtColor(playerImage, cv.COLOR_BGR2RGB)
+#     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=playerImage)
+#     pose_landmarker_result = pose_landmarker.detect(mp_image)
+#     print("Pose landmarks:", pose_landmarker_result.pose_landmarks) 
+#     return pose_landmarker_result
+    #face_landmarker_result = face_landmarker.detect(mp_image)
+    #print("Face landmarks:", len(face_landmarker_result.face_landmarks[0]) if face_landmarker_result.face_landmarks else 0)
+    # #Render Detections
+    # mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+    #                           mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2),
+    #                           mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2))
+# def draw_pose_on_full_frame(frame, bbox, pose_result):
+#     if not pose_result.pose_landmarks:
+#         return
+#     x1, y1, x2, y2 = map(int, bbox)
+#     w = x2 - x1
+#     h = y2 - y1
+#     landmarks = pose_result.pose_landmarks[0]
+#     #Draw each joint
+#     for lm in landmarks:
+#         cx = x1 + int(lm.x * w)
+#         cy = y1 + int(lm.y * h)
+#         cv.circle(frame, (cx, cy), 3, (0, 255, 0), -1)
 
 def read_video():
     #Main video processing
     capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
     #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
     #Extract team colours from first frame
+
+    # Get video properties
+    fps = capture.get(cv.CAP_PROP_FPS)
+    frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
+
+
     isTrue, first_frame = capture.read()
     team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
     #Track statistics
@@ -146,34 +197,36 @@ def read_video():
     source = np.array([[200, 50],[1720, 50],[1880, 1000],[40, 1000]])
     target = np.array([[0, 0], [target_width-1, 0], [target_width-1, target_height-1], [0, target_height-1]])
     transformation = BirdsEyeView(source, target)
-    
-
+    #MediaPipe Pose estimation confidence of 50% for detecting and tracking
     #Process video
     while True:
         isTrue, frame = capture.read()
         if not isTrue:
             break
-        # Run Object Detection detection
         current_time = time()
         results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="bytetrack.yaml")  
         result = results[0]
         boxes = result.boxes
+
+        
         #Transform the points of the bounding box 
         transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
         #Process each detected person
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])
-            if cls == 0:
+            if cls == 0: #Person class is 2
                 bbox = box.xyxy[0].cpu().numpy()
+                #pose_result = pose_estimation(frame, bbox)
+                #draw_pose_on_full_frame(frame, bbox, pose_result)
                 x1, y1, x2, y2 = map(int, bbox)
                 x,y = transformed_coords[i]
                 track_id = int(box.id[0]) if box.id is not None else None
                 #Save the transformed co-ordinates of the box at its id position
                 label = f"ID:{track_id}"
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
-                acceleration = transformation.calculate_acceleration(track_id, (x, y), current_time)
-                g_force = transformation.calculate_GForce(track_id, (x, y), current_time)
-                label = f"ID:{track_id} Speed{speed} Kph | Acceleration:{acceleration} MS^2 | G-Force:{g_force} G"
+                acceleration = transformation.calculate_acceleration(track_id)
+                g_force = transformation.calculate_GForce(track_id)
+                label = f"ID:{track_id} Speed{round(speed)} Kph | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
 
                 #Get dominant colour
                 colour = get_dominant_colour(frame, bbox)
@@ -186,15 +239,13 @@ def read_video():
                 
                 #Add label with background for better visibility
                 label_text = f"{team_label} {label}"
-                                #Add label with background for better visibility
-                label_text = f"{team_label} {label}"
 
-            # Draw background rectangle
-            cv.rectangle(frame,(x1, y1 - 5),(x2, y1-20),box_colour,-1)
+                # Draw background rectangle
+                cv.rectangle(frame,(x1, y1 - 5),(x2+300, y1-20),box_colour,-1)
+                
+                # Draw text on top of background
+                cv.putText(frame,label_text,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
             
-            # Draw text on top of background
-            cv.putText(frame,label_text,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
-        
         #Resize the frame
         frameResized = rescaleFrame(frame, scale=0.75)
         cv.imshow("Team Classification", frameResized)
