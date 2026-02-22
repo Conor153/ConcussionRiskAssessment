@@ -17,6 +17,8 @@ from mediapipe.tasks.python import vision
 #model = YOLO('../models/AMDGPUv1TrainYOLON/weights/AMDGPUv1TrainYOLOn.pt')
 
 model = YOLO('../models/AMDGPUv2TrainYOLOS/weights/AMDGPUTrainYOLOs.pt')
+pose_model = YOLO('yolo11n-pose.pt')
+
 #model = YOLO('yolo11s-pose.pt')
 #Create Pose Landmarker object
 # BaseOptions = mp.tasks.BaseOptions
@@ -143,11 +145,6 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
 #     angular_velocity = calculate_angular_displacement()
 #     return angular_velocity
 
-
-# def get_camera_movement(frames):
-#     camera_movement = [[0,0]*len(frames)]
-#     grey = cv.cvtColor(frames[0],cv.COLOR_BGR2GRAY)
-
 # def pose_estimation(frame, bbox):
 #     x1, y1, x2, y2 = map(int, bbox)
 #     playerImage = frame[y1:y2, x1:x2]
@@ -175,18 +172,78 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
 #         cy = y1 + int(lm.y * h)
 #         cv.circle(frame, (cx, cy), 3, (0, 255, 0), -1)
 
-def read_video():
-    #Main video processing
-    capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
-    #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
-    #Extract team colours from first frame
 
+def pose_estimation(frame, bbox):
+    x1, y1, x2, y2 = map(int, bbox)
+    player_box = frame[y1:y2, x1:x2]
+
+    connections = [(0,1),
+                   (0,2),
+                   (1,3),
+                   (2,4),
+                   (5,6),
+                   (5,7)]
+    
+    player_pose= pose_model(player_box, verbose=False)
+    if player_pose[0].keypoints is not None:
+        keypoints = player_pose[0].keypoints.xy.cpu().numpy()
+        for person_kpts in keypoints:
+            for start, end in connections:  # Draw connections
+                if start < len(person_kpts) and end < len(person_kpts):
+                    pt1, pt2 = person_kpts[start], person_kpts[end]
+                    if pt1[0] > 0 and pt1[1] > 0 and pt2[0] > 0 and pt2[1] > 0:
+                        cv.line(frame, (int(pt1[0]), int(pt1[1])),
+                                    (int(pt2[0]), int(pt2[1])), (245, 66, 230), 3)
+            for pt in person_kpts:  # Draw keypoints
+                if pt[0] > 0 and pt[1] > 0:
+                    cv.circle(frame, (int(pt[0]), int(pt[1])), 5, (245, 117, 66), -1)
+                    cv.circle(frame, (int(pt[0]), int(pt[1])), 6, (255, 255, 255), 1)
+
+
+
+def create_source(first_frame):
+    source_coordinates = []
+    def get_pixel_coordinates(event, x, y, flags, param):
+        if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
+            # print(f"Coordinates: (x={x}, y={y})")
+            source_coordinates.append((x, y))
+            cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
+            #cv.imshow("Select 4 Field Points", first_frame)
+
+    print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
+    
+    param = {'frame': first_frame.copy()}
+    cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
+    cv.setMouseCallback("Frame", get_pixel_coordinates, param)
+    
+    while True:
+        display_frame = param['frame'].copy()
+        cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press ESC when done", 
+                  (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv.imshow("Frame", display_frame)
+        # if len(source_coordinates) == 4:
+        #     break
+        key = cv.waitKey(1) & 0xFF
+        if key == 27:  # Press ESC to exit
+            break
+    
+    cv.destroyAllWindows()
+    print(f"Selected coordinates: {source_coordinates}")
+    return source_coordinates
+
+def read_video():
+
+    #Main video processing
+    #capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
+    #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
+    capture = cv.VideoCapture("C:/Users/Conor/Videos/CJSTround60fps.mp4")
+    #"C:/Users/Conor/Videos/CJSTround60fps.mp4"
+    #Extract team colours from first frame
     # Get video properties
     fps = capture.get(cv.CAP_PROP_FPS)
-    frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
-
-
     isTrue, first_frame = capture.read()
+    source_values = create_source(first_frame)
+
     team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
     #Track statistics
     team_counts = defaultdict(int)
@@ -194,39 +251,43 @@ def read_video():
     #Source is the area within the videp
     target_width = 109.7 #meters of NFL Field endzone to endzone
     target_height = 48.8 #meters of NFL Field sideline to sideline
-    source = np.array([[200, 50],[1720, 50],[1880, 1000],[40, 1000]])
-    target = np.array([[0, 0], [target_width-1, 0], [target_width-1, target_height-1], [0, target_height-1]])
+    source = np.array(source_values, dtype=np.float32)
+    target = np.array([[0, 0], [target_width-1, 0], [target_width-1, target_height-1], [0, target_height-1]], dtype=np.float32)
     transformation = BirdsEyeView(source, target)
     #MediaPipe Pose estimation confidence of 50% for detecting and tracking
+    frame_count = 0
     #Process video
     while True:
         isTrue, frame = capture.read()
         if not isTrue:
             break
-        current_time = time()
-        results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="bytetrack.yaml")  
+        transformation.update_matrix(frame)
+        current_time = frame_count/fps
+        results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="botsort.yaml")  
+        #botsort
         result = results[0]
         boxes = result.boxes
 
-        
         #Transform the points of the bounding box 
         transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
         #Process each detected person
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])
-            if cls == 0: #Person class is 2
+            if cls == 2: #Person class is 2cls
                 bbox = box.xyxy[0].cpu().numpy()
-                #pose_result = pose_estimation(frame, bbox)
+                pose_estimation(frame, bbox)
                 #draw_pose_on_full_frame(frame, bbox, pose_result)
                 x1, y1, x2, y2 = map(int, bbox)
                 x,y = transformed_coords[i]
+
                 track_id = int(box.id[0]) if box.id is not None else None
                 #Save the transformed co-ordinates of the box at its id position
                 label = f"ID:{track_id}"
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
                 acceleration = transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)
-                label = f"ID:{track_id} Speed{round(speed)} Kph | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
+                label = f"ID:{track_id} Speed{round(speed)} MpS | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
 
                 #Get dominant colour
                 colour = get_dominant_colour(frame, bbox)
@@ -252,7 +313,7 @@ def read_video():
         #Stop if 'd' is pressed
         if cv.waitKey(20) & 0xFF == ord('d'):
             break
-
+        frame_count+= 1
     capture.release()
     cv.destroyAllWindows()
     
