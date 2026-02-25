@@ -196,8 +196,8 @@ def pose_estimation(frame, bbox):
                                     (int(pt2[0]), int(pt2[1])), (245, 66, 230), 3)
             for pt in person_kpts:  # Draw keypoints
                 if pt[0] > 0 and pt[1] > 0:
-                    cv.circle(frame, (int(pt[0]), int(pt[1])), 5, (245, 117, 66), -1)
-                    cv.circle(frame, (int(pt[0]), int(pt[1])), 6, (255, 255, 255), 1)
+                    cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
+                    cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 6, (255, 255, 255), 1)
 
 
 
@@ -236,7 +236,7 @@ def read_video():
     #Main video processing
     #capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
     #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
-    capture = cv.VideoCapture("C:/Users/Conor/Videos/CJSTround60fps.mp4")
+    capture = cv.VideoCapture("C:/Users/Conor/Videos/video9.mp4")
     #"C:/Users/Conor/Videos/CJSTround60fps.mp4"
     #Extract team colours from first frame
     # Get video properties
@@ -249,10 +249,13 @@ def read_video():
     team_counts = defaultdict(int)
     #Target is full NFL field size
     #Source is the area within the videp
-    target_width = 109.7 #meters of NFL Field endzone to endzone
-    target_height = 48.8 #meters of NFL Field sideline to sideline
+    # target_width = 109.7 #meters of NFL Field endzone to endzone
+    # target_height = 48.8 #meters of NFL Field sideline to sideline
+    target_width = 9.144 #meters of NFL Field endzone to endzone
+    target_height = 37.8 #meters of NFL Field sideline to sideline
+    
     source = np.array(source_values, dtype=np.float32)
-    target = np.array([[0, 0], [target_width-1, 0], [target_width-1, target_height-1], [0, target_height-1]], dtype=np.float32)
+    target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
     transformation = BirdsEyeView(source, target)
     #MediaPipe Pose estimation confidence of 50% for detecting and tracking
     frame_count = 0
@@ -274,7 +277,7 @@ def read_video():
         #Process each detected person
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])
-            if cls == 2: #Person class is 2cls
+            if cls == 1: #Person class is 2cls
                 bbox = box.xyxy[0].cpu().numpy()
                 pose_estimation(frame, bbox)
                 #draw_pose_on_full_frame(frame, bbox, pose_result)
@@ -287,7 +290,8 @@ def read_video():
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
                 acceleration = transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)
-                label = f"ID:{track_id} Speed{round(speed)} MpS | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
+                label = f"ID:{track_id} Speed{round(speed)} MpS"
+                #label = f"ID:{track_id} Speed{round(speed)} MpS | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
 
                 #Get dominant colour
                 colour = get_dominant_colour(frame, bbox)
@@ -296,16 +300,14 @@ def read_video():
                 team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
                 team_counts[team_label] += 1
 
-                cv.rectangle(frame, (x1, y1), (x2, y2), box_colour, 3)
-                
-                #Add label with background for better visibility
-                label_text = f"{team_label} {label}"
+                # cv.rectangle(frame, (x1, y1), (x2, y2), box_colour, 3)
 
                 # Draw background rectangle
-                cv.rectangle(frame,(x1, y1 - 5),(x2+300, y1-20),box_colour,-1)
+                cv.rectangle(frame,(x1, y1 - 20),(x2+100, y1),box_colour,-1)
+                #cv.rectangle(frame,(x1, y1 - 5),(x2+300, y1-20),box_colour,-1)
                 
                 # Draw text on top of background
-                cv.putText(frame,label_text,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
+                cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
             
         #Resize the frame
         frameResized = rescaleFrame(frame, scale=0.75)
