@@ -1,37 +1,27 @@
 import cv2 as cv
+import torch
+from ultralytics import YOLO
 import numpy as np
 from time import time
-from perspective_transformation import BirdsEyeView
+from perspective_transformation import BirdsEyeView #AngularCalculations
 import math 
-from ultralytics import YOLO
 from sklearn.cluster import KMeans
 from collections import defaultdict, deque
-import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
-
 
 #model is a pretrained Yolo Model
 #model = YOLO('../models/CoLab_T4/CoLab_T4GPU.pt')
 #model = YOLO('../models/AMDCPUv1TrainYOLON/weights/AMDCPUv1TrainYOLOn.pt')
 #model = YOLO('../models/AMDGPUv1TrainYOLON/weights/AMDGPUv1TrainYOLOn.pt')
 
+#Models
 model = YOLO('../models/AMDGPUv2TrainYOLOS/weights/AMDGPUTrainYOLOs.pt')
-pose_model = YOLO('yolo11n-pose.pt')
+pose_model = YOLO('../models/PoseDetection/yolo11n-pose.pt')
 
-#model = YOLO('yolo11s-pose.pt')
-#Create Pose Landmarker object
-# BaseOptions = mp.tasks.BaseOptions
-# PoseLandmarker = mp.tasks.vision.PoseLandmarker
-# PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-# FaceLandmarker = mp.tasks.vision.FaceLandmarker
-# FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
-# VisionRunningMode = mp.tasks.vision.RunningMode
-# pose_options = PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path="../models/PoseDetection/pose_landmarker_full.task"), running_mode=VisionRunningMode.IMAGE)
-# face_options = FaceLandmarkerOptions(base_options=BaseOptions(model_asset_path="../models/FaceDetection/face_landmarker.task"), running_mode=VisionRunningMode.IMAGE)
-# pose_landmarker = PoseLandmarker.create_from_options(pose_options)
-# face_landmarker = FaceLandmarker.create_from_options(face_options)
-
+#Use GPU if available
+if torch.cuda.is_available():
+    model.to('cuda:0')
+    pose_model.to('cuda:0')
+print(f"Model device: {model.device}, Pose device: {pose_model.device}")
 
 #Function to resize the window frame
 def rescaleFrame(frame, scale=0.75):
@@ -80,7 +70,7 @@ def extract_team_colours_from_frame(frame, model):
     #For all boxes get the dominant colour
     for box in boxes:
         cls = int(box.cls[0])
-        if cls == 0:
+        if cls == 1:#Jersey
             bbox = box.xyxy[0].cpu().numpy()
             colour = get_dominant_colour(frame, bbox)
             if colour is not None:
@@ -131,87 +121,61 @@ def classify_team_by_colour(colour_bgr, team1_info, team2_info):
     else:
         return "Team 2", (255, 0, 0)
 
-# def calculate_angular_acceleration():
-#     angular_acceleration = calculate_angular_velocity()/get_time()
-#     #Green      
-#     #Yellow     
-#     #Red        
-
-# def calculate_angular_displacement(angle_a, angle_B):
-#     angular_displacement = angle_a - angle_B
-#     return angular_displacement
-
-# def calculate_angular_velocity():
-#     angular_velocity = calculate_angular_displacement()
-#     return angular_velocity
-
-# def pose_estimation(frame, bbox):
-#     x1, y1, x2, y2 = map(int, bbox)
-#     playerImage = frame[y1:y2, x1:x2]
-#     playerImage = cv.cvtColor(playerImage, cv.COLOR_BGR2RGB)
-#     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=playerImage)
-#     pose_landmarker_result = pose_landmarker.detect(mp_image)
-#     print("Pose landmarks:", pose_landmarker_result.pose_landmarks) 
-#     return pose_landmarker_result
-    #face_landmarker_result = face_landmarker.detect(mp_image)
-    #print("Face landmarks:", len(face_landmarker_result.face_landmarks[0]) if face_landmarker_result.face_landmarks else 0)
-    # #Render Detections
-    # mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-    #                           mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2),
-    #                           mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2))
-# def draw_pose_on_full_frame(frame, bbox, pose_result):
-#     if not pose_result.pose_landmarks:
-#         return
-#     x1, y1, x2, y2 = map(int, bbox)
-#     w = x2 - x1
-#     h = y2 - y1
-#     landmarks = pose_result.pose_landmarks[0]
-#     #Draw each joint
-#     for lm in landmarks:
-#         cx = x1 + int(lm.x * w)
-#         cy = y1 + int(lm.y * h)
-#         cv.circle(frame, (cx, cy), 3, (0, 255, 0), -1)
-
-
 def pose_estimation(frame, bbox):
+    """Pose Estimation Function
+    Used to Identify the keypoints of the body on the players bounding box
+    The key points are mapped to the identified position
+    Returned is the nose, and ears"""
+    
+    # Get the corners pof the bounding box
     x1, y1, x2, y2 = map(int, bbox)
     player_box = frame[y1:y2, x1:x2]
 
-    connections = [(0,1),
-                   (0,2),
-                   (1,3),
-                   (2,4),
-                   (5,6),
-                   (5,7)]
+    if player_box.size == 0:
+        return None, None, None
     
-    player_pose= pose_model(player_box, verbose=False)
-    if player_pose[0].keypoints is not None:
-        keypoints = player_pose[0].keypoints.xy.cpu().numpy()
-        for person_kpts in keypoints:
-            for start, end in connections:  # Draw connections
-                if start < len(person_kpts) and end < len(person_kpts):
-                    pt1, pt2 = person_kpts[start], person_kpts[end]
-                    if pt1[0] > 0 and pt1[1] > 0 and pt2[0] > 0 and pt2[1] > 0:
-                        cv.line(frame, (int(pt1[0]), int(pt1[1])),
-                                    (int(pt2[0]), int(pt2[1])), (245, 66, 230), 3)
-            for pt in person_kpts:  # Draw keypoints
-                if pt[0] > 0 and pt[1] > 0:
-                    cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
-                    cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 6, (255, 255, 255), 1)
+    #Connect the node to the left and right ears
+    connections = [(0,3),(0,4),(3,4)]
+    #Run the model ove rthe bouning box
+    player_pose = pose_model(player_box, verbose=False)
+    
+    if player_pose is None or len(player_pose) == 0:
+        return None, None, None
+    if player_pose[0].keypoints is None:
+        return None, None, None
+    
+    keypoints = player_pose[0].keypoints.xy.cpu().numpy()
+    
+    #If there is 
+    if len(keypoints) == 0:
+        return None, None, None
+    
+    #For 
+    for person_kpts in keypoints:
+    
+        person_kpts = person_kpts[0:5]
+        for start, end in connections:
+            if start < len(person_kpts) and end < len(person_kpts):
+                pt1, pt2 = person_kpts[start], person_kpts[end]
+                if pt1[0] > 0 and pt1[1] > 0 and pt2[0] > 0 and pt2[1] > 0:
+                    cv.line(frame, (int(pt1[0])+x1, int(pt1[1])+y1),
+                            (int(pt2[0])+x1, int(pt2[1])+y1), (245, 66, 230), 3)
+        for pt in person_kpts:
+            if pt[0] > 0 and pt[1] > 0:
+                cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
 
-
+    #Return the Node, Left ear and Right ear
+    return person_kpts[0], person_kpts[3], person_kpts[4]
 
 def create_source(first_frame):
+    """A function which allows users to select the source co-ordinates from frame 1"""
     source_coordinates = []
     def get_pixel_coordinates(event, x, y, flags, param):
         if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
-            # print(f"Coordinates: (x={x}, y={y})")
             source_coordinates.append((x, y))
             cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
-            #cv.imshow("Select 4 Field Points", first_frame)
 
     print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
-    
     param = {'frame': first_frame.copy()}
     cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
     cv.setMouseCallback("Frame", get_pixel_coordinates, param)
@@ -232,83 +196,93 @@ def create_source(first_frame):
     return source_coordinates
 
 def read_video():
+    """ Main video processing thread"""
 
-    #Main video processing
-    #capture = cv.VideoCapture('../dataset/videos/CJStroudConcussion.mp4')
-    #capture = cv.VideoCapture('C:/Users/Conor/Videos/ConcussionAssessment/ConcussionHits/MarquiseGoodwinConcussion.mp4')
-    capture = cv.VideoCapture("C:/Users/Conor/Videos/video9.mp4")
-    #"C:/Users/Conor/Videos/CJSTround60fps.mp4"
+    #Capture the uploaded video
+    capture = cv.VideoCapture("../dataset/videos/video4.mp4")
+
+
     #Extract team colours from first frame
     # Get video properties
+    frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
-    isTrue, first_frame = capture.read()
-    source_values = create_source(first_frame)
 
+
+    isTrue, first_frame = capture.read()
+    #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
     team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
     #Track statistics
     team_counts = defaultdict(int)
-    #Target is full NFL field size
-    #Source is the area within the videp
-    # target_width = 109.7 #meters of NFL Field endzone to endzone
-    # target_height = 48.8 #meters of NFL Field sideline to sideline
-    target_width = 9.144 #meters of NFL Field endzone to endzone
-    target_height = 37.8 #meters of NFL Field sideline to sideline
-    
+    #Target matrix for Homography
+    target_width = 9.144 #meters of 1 10 yard line to a yard line 10 yards apart
+    target_height = 37.8 #meters of NFL Field from sidline number to sideline number 
+    #Get user to select the source co-ordinates
+    source_values = create_source(first_frame)
     source = np.array(source_values, dtype=np.float32)
     target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
+    #Create BirdsEyeView object to create homography and calaulate metrics
     transformation = BirdsEyeView(source, target)
-    #MediaPipe Pose estimation confidence of 50% for detecting and tracking
-    frame_count = 0
-    #Process video
+    #Process video 
     while True:
         isTrue, frame = capture.read()
         if not isTrue:
             break
+        #Update the homography 
         transformation.update_matrix(frame)
+        #Calculate time with the video
         current_time = frame_count/fps
+        #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
         results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.5, iou=0.5, tracker="botsort.yaml")  
-        #botsort
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.6, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
 
         #Transform the points of the bounding box 
         transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
-        #Process each detected person
+        #Process each detected bounding box
         for i, box in enumerate(boxes):
-            cls = int(box.cls[0])
-            if cls == 1: #Person class is 2cls
+            cls = int(box.cls[0])    
+            if cls == 2: #Person class is 2
+
                 bbox = box.xyxy[0].cpu().numpy()
-                pose_estimation(frame, bbox)
-                #draw_pose_on_full_frame(frame, bbox, pose_result)
                 x1, y1, x2, y2 = map(int, bbox)
                 x,y = transformed_coords[i]
-
                 track_id = int(box.id[0]) if box.id is not None else None
-                #Save the transformed co-ordinates of the box at its id position
+                #Assign a lable ID for player identification during video
                 label = f"ID:{track_id}"
+
+                #Calculate speed, acceleration and G-force of ther player using their transformed X and Y co-ordinates
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
                 acceleration = transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)
-                label = f"ID:{track_id} Speed{round(speed)} MpS"
-                #label = f"ID:{track_id} Speed{round(speed)} MpS | Acceleration:{round(acceleration)} MS^2 | G-Force:{round(g_force)} G"
-
-                #Get dominant colour
-                colour = get_dominant_colour(frame, bbox)
                 
-                #Classify team
+                #Estimate the pose of the player bounding box and retrieve the posiions of the node and ears
+                nose, left_ear, right_ear = pose_estimation(frame, bbox)
+                if nose is None or left_ear is None or right_ear is None:
+                    continue
+                #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
+                angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
+                angular_velocity = transformation.calculate_anglular_velocity(track_id, current_time)
+                angular_acceleration = transformation.calculate_anglular_acceleration(track_id)
+                #Attach label with values for display purposes
+
+                #label = f"ID:{track_id} Angle{abs(round(angle))} Rad"
+                #label = f"ID:{track_id} Angle Velocity{round(angular_velocity)} Rad"
+                #label = f"ID:{track_id} Angle Acceleration {abs(round(angular_acceleration))} Rad^2"
+                
+                #label = f"ID:{track_id} Speed{round(speed)} MpS"
+                #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
+                label = f"ID:{track_id} G-Force:{round(g_force)} G"
+                 
+               
+                #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2
+                colour = get_dominant_colour(frame, bbox)
                 team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
                 team_counts[team_label] += 1
-
-                # cv.rectangle(frame, (x1, y1), (x2, y2), box_colour, 3)
-
-                # Draw background rectangle
+                # Draw background rectangle and place text over it
                 cv.rectangle(frame,(x1, y1 - 20),(x2+100, y1),box_colour,-1)
-                #cv.rectangle(frame,(x1, y1 - 5),(x2+300, y1-20),box_colour,-1)
-                
-                # Draw text on top of background
-                cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)
-            
+                cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
+
         #Resize the frame
         frameResized = rescaleFrame(frame, scale=0.75)
         cv.imshow("Team Classification", frameResized)
