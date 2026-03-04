@@ -152,7 +152,6 @@ def pose_estimation(frame, bbox):
     
     #For 
     for person_kpts in keypoints:
-    
         person_kpts = person_kpts[0:5]
         for start, end in connections:
             if start < len(person_kpts) and end < len(person_kpts):
@@ -182,17 +181,22 @@ def create_source(first_frame):
     
     while True:
         display_frame = param['frame'].copy()
-        cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press ESC when done", 
+        cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press Q when done", 
                   (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv.imshow("Frame", display_frame)
-        # if len(source_coordinates) == 4:
-        #     break
         key = cv.waitKey(1) & 0xFF
-        if key == 27:  # Press ESC to exit
+        # Press Q to exit
+        if key == ord('q'):
             break
     
     cv.destroyAllWindows()
     print(f"Selected coordinates: {source_coordinates}")
+    print(f"Selected coordinates: {source_coordinates[1]}")
+    print(f"Selected coordinates: {source_coordinates[1][1]}")
+    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1], -y[0]))
+    print(f"Selected coordinates: {source_coordinates}")
+        
+
     return source_coordinates
 
 def read_video():
@@ -215,7 +219,8 @@ def read_video():
     team_counts = defaultdict(int)
     #Target matrix for Homography
     target_width = 9.144 #meters of 1 10 yard line to a yard line 10 yards apart
-    target_height = 37.8 #meters of NFL Field from sidline number to sideline number 
+    target_height = 29.3 #meters distance between sideline numbers
+
     #Get user to select the source co-ordinates
     source_values = create_source(first_frame)
     source = np.array(source_values, dtype=np.float32)
@@ -236,7 +241,6 @@ def read_video():
         #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.6, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
-
         #Transform the points of the bounding box 
         transformed_coords = transformation.transform_points(boxes.xyxy.cpu().numpy().astype(np.float32))
         #Process each detected bounding box
@@ -270,12 +274,12 @@ def read_video():
                 #label = f"ID:{track_id} Angle Velocity{round(angular_velocity)} Rad"
                 #label = f"ID:{track_id} Angle Acceleration {abs(round(angular_acceleration))} Rad^2"
                 
-                #label = f"ID:{track_id} Speed{round(speed)} MpS"
+                label = f"ID:{track_id} Speed{round(speed)} MpS"
                 #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
-                label = f"ID:{track_id} G-Force:{round(g_force)} G"
+                #label = f"ID:{track_id} G-Force:{round(g_force)} G"
                  
                
-                #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2
+                #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2pppppp
                 colour = get_dominant_colour(frame, bbox)
                 team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
                 team_counts[team_label] += 1
@@ -285,9 +289,13 @@ def read_video():
 
         #Resize the frame
         frameResized = rescaleFrame(frame, scale=0.75)
+        key = cv.waitKey(1) & 0xFF
         cv.imshow("Team Classification", frameResized)
-        #Stop if 'd' is pressed
-        if cv.waitKey(20) & 0xFF == ord('d'):
+        #Pause if 'p' is pressed
+        if key  == ord('p'):
+            cv.waitKey(0)
+        #Stop if 'q' is pressed
+        if key == ord('q'):
             break
         frame_count+= 1
     capture.release()
