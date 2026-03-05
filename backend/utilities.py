@@ -219,7 +219,7 @@ def read_video():
     team_counts = defaultdict(int)
     #Target matrix for Homography
     target_width = 9.144 #meters of 1 10 yard line to a yard line 10 yards apart
-    target_height = 29.3 #meters distance between sideline numbers
+    target_height = 26.79192 #meters distance between sideline numbers
 
     #Get user to select the source co-ordinates
     source_values = create_source(first_frame)
