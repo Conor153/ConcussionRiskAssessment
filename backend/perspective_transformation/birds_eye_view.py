@@ -191,6 +191,7 @@ class BirdsEyeView:
         #If the track id is not in angle then add it to angle
         if track_id not in self.angle:
             self.angle[track_id] = deque(maxlen=15)
+        #print(f"ID: {track_id} / Nose: {nose} / LeftEar {left_ear} / RightEar {right_ear} / CurrentTime {current_time}")
         #Subtract the X and Y of the left and right ear
         dx = right_ear[0] - left_ear[0]
         dy = right_ear[1] - left_ear[1]

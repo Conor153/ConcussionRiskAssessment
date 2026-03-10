@@ -3,7 +3,7 @@ import torch
 from ultralytics import YOLO
 import numpy as np
 from time import time
-from perspective_transformation import BirdsEyeView #AngularCalculations
+from perspective_transformation import BirdsEyeView 
 import math 
 from sklearn.cluster import KMeans
 from collections import defaultdict, deque
@@ -193,7 +193,7 @@ def create_source(first_frame):
     print(f"Selected coordinates: {source_coordinates}")
     print(f"Selected coordinates: {source_coordinates[1]}")
     print(f"Selected coordinates: {source_coordinates[1][1]}")
-    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1], -y[0]))
+    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1], y[0]))
     print(f"Selected coordinates: {source_coordinates}")
         
 
@@ -203,7 +203,7 @@ def read_video():
     """ Main video processing thread"""
 
     #Capture the uploaded video
-    capture = cv.VideoCapture("../dataset/videos/video4.mp4")
+    capture = cv.VideoCapture("../dataset/videos/video12.mp4")
 
 
     #Extract team colours from first frame
@@ -237,8 +237,9 @@ def read_video():
         #Calculate time with the video
         current_time = frame_count/fps
         #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
-        results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.6, tracker="botsort.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.7, tracker="botsort.yaml")  
+        results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.75, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
         #Transform the points of the bounding box 
@@ -268,16 +269,17 @@ def read_video():
                 angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
                 angular_velocity = transformation.calculate_anglular_velocity(track_id, current_time)
                 angular_acceleration = transformation.calculate_anglular_acceleration(track_id)
+                
                 #Attach label with values for display purposes
 
                 #label = f"ID:{track_id} Angle{abs(round(angle))} Rad"
                 #label = f"ID:{track_id} Angle Velocity{round(angular_velocity)} Rad"
                 #label = f"ID:{track_id} Angle Acceleration {abs(round(angular_acceleration))} Rad^2"
                 
-                label = f"ID:{track_id} Speed{round(speed)} MpS"
+                #label = f"ID:{track_id} Speed{round(speed)} MpS"
                 #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
-                #label = f"ID:{track_id} G-Force:{round(g_force)} G"
-                 
+                label = f"ID:{track_id} G-Force:{round(g_force)} G"
+                #label = f"ID:{track_id} Speed{round(speed)} MpS| Acceleration:{round(acceleration)} MS^2| G-Force:{round(g_force)} G"
                
                 #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2pppppp
                 colour = get_dominant_colour(frame, bbox)
