@@ -193,10 +193,16 @@ def create_source(first_frame):
     print(f"Selected coordinates: {source_coordinates}")
     print(f"Selected coordinates: {source_coordinates[1]}")
     print(f"Selected coordinates: {source_coordinates[1][1]}")
-    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1], y[0]))
+    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1]))
+    if source_coordinates[0][0]>source_coordinates[1][0]:
+        swap = source_coordinates[0]
+        source_coordinates[0] = source_coordinates[1]
+        source_coordinates[1] = swap
+    if source_coordinates[2][0]<source_coordinates[3][0]:
+        swap = source_coordinates[2]
+        source_coordinates[2] = source_coordinates[3]
+        source_coordinates[3] = swap
     print(f"Selected coordinates: {source_coordinates}")
-        
-
     return source_coordinates
 
 def read_video():
