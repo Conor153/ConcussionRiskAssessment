@@ -1,5 +1,6 @@
 import cv2 as cv
 import torch
+from torchvision import ops
 from ultralytics import YOLO
 import numpy as np
 from time import time
@@ -149,7 +150,6 @@ def pose_estimation(frame, bbox):
     #If there is 
     if len(keypoints) == 0:
         return None, None, None
-    
     #For 
     for person_kpts in keypoints:
         person_kpts = person_kpts[0:5]
@@ -243,9 +243,9 @@ def read_video():
         #Calculate time with the video
         current_time = frame_count/fps
         #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
-        #results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.7, tracker="botsort.yaml")  
-        results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.75, tracker="botsort.yaml")  
+        results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.4, iou=0.4, tracker="../models/Trackers/bytetrack.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.4, iou=0.5, tracker="../models/Trackers/botsort.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.5, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
         #Transform the points of the bounding box 
@@ -253,8 +253,8 @@ def read_video():
         #Process each detected bounding box
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])    
-            if cls == 2: #Person class is 2
-
+            #print(f"Class: {cls} - Name: {result.names[cls]}")
+            if cls == 0: #Person class is 2
                 bbox = box.xyxy[0].cpu().numpy()
                 x1, y1, x2, y2 = map(int, bbox)
                 x,y = transformed_coords[i]
@@ -266,15 +266,20 @@ def read_video():
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
                 acceleration = transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)
-                
+                # if helmet_coordinates is None:
+                #     continue
+
+                # hx1, hy1, hx2, hy2 = helmet_coordinates
+                # helmet_centre = (hx1+hx2)/2, (hy1+hy2)/2
+
                 #Estimate the pose of the player bounding box and retrieve the posiions of the node and ears
-                nose, left_ear, right_ear = pose_estimation(frame, bbox)
-                if nose is None or left_ear is None or right_ear is None:
-                    continue
-                #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
-                angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
-                angular_velocity = transformation.calculate_anglular_velocity(track_id, current_time)
-                angular_acceleration = transformation.calculate_anglular_acceleration(track_id)
+                # nose, left_ear, right_ear = pose_estimation(frame, bbox)
+                # if nose is None or left_ear is None or right_ear is None:
+                #     continue
+                # #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
+                # angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
+                # angular_velocity = transformation.calculate_anglular_velocity(track_id, current_time)
+                # angular_acceleration = transformation.calculate_anglular_acceleration(track_id)
                 
                 #Attach label with values for display purposes
 
@@ -284,15 +289,17 @@ def read_video():
                 
                 #label = f"ID:{track_id} Speed{round(speed)} MpS"
                 #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
+                #label = f"ID:{track_id} G-Force:{round(g_force)} G"
+
                 label = f"ID:{track_id} G-Force:{round(g_force)} G"
-                #label = f"ID:{track_id} Speed{round(speed)} MpS| Acceleration:{round(acceleration)} MS^2| G-Force:{round(g_force)} G"
                
+                #colour, colour_value = transformation.calculate_risk(g_force, angular_acceleration)
                 #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2pppppp
                 colour = get_dominant_colour(frame, bbox)
                 team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
                 team_counts[team_label] += 1
                 # Draw background rectangle and place text over it
-                cv.rectangle(frame,(x1, y1 - 20),(x2+100, y1),box_colour,-1)
+                cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
                 cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
         #Resize the frame

@@ -34,6 +34,11 @@ class BirdsEyeView:
         self.angular_velocity = {} 
         self.angular_acceleration = {} 
 
+        self.RED_GFORCE = 80
+        self.YELLOW_GFORCE = 49
+        self.RED_ANGULAR_ACCELERATION = 5875
+        self.YELLOW_ANGULAR_ACCELERATION= 3512
+
     #Transform the BBox to get the centre bottom co-ordinates
     def transform_points(self, points: np.ndarray) -> np.ndarray:
         """Function to transform the players co-ordinates with the matrix"""
@@ -147,20 +152,20 @@ class BirdsEyeView:
         #Convert the speed queue to a list
         speed = list(self.current_speeds[track_id])
         #If we are at frame 1 then there is only 1 speed is stored therfore set speed to 0
-        if len(speed) < 2:
+        if len(speed) < 3:
             self.acceleration[track_id].append((0.0))
             return 0.0
         #If 7 frames are available take the speed of the most recent frame and the 7th last frame
-        #If there are only 4 take the speed of the most recent frame and the 4th last frame
+        #If there are only 3 take the speed of the most recent frame and the 4th last frame
         #E;se take last 2 speed results
-        if len(speed) >= 7:
-            old_speed = speed[-7]
-            new_speed = speed[-1]
-        elif len(speed) >= 4:
-            old_speed = speed[-4]
-            new_speed = speed[-1]
+        # if len(speed) >= 7:
+        #     old_speed = speed[-7]
+        #     new_speed = speed[-1]
+        # if len(speed) >= 3:
+        #     old_speed = speed[-3]
+        #     new_speed = speed[-1]
         else:
-            old_speed = speed[0]
+            old_speed = speed[-2]
             new_speed = speed[-1]
         #Get the time at both frames and subtract to get time difference
         time_diff = new_speed[1] - old_speed[1] 
@@ -240,10 +245,7 @@ class BirdsEyeView:
         #If 7 frames are available take the angular velocity of the most recent frame and the 7th last frame
         #If there are only 4 take the angular velocity of the most recent frame and the 4th last frame
         #Else take last 2 angular velocity results
-        if len(angular_velocity) >= 7:
-            old_angular_velocity = angular_velocity[-7]
-            new_angular_velocity = angular_velocity[-1]
-        elif len(angular_velocity) >= 4:
+        if len(angular_velocity) >= 4:
             old_angular_velocity = angular_velocity[-4]
             new_angular_velocity = angular_velocity[-1]
         else:
@@ -259,3 +261,11 @@ class BirdsEyeView:
         else:
             self.angular_acceleration[track_id].append((0.0))
             return 0
+        
+    def calculate_risk(self, g_force, angular_acceleration):
+        if g_force >= self.RED_GFORCE or abs(angular_acceleration) >= self.RED_ANGULAR_ACCELERATION:
+            return "RED", (0,0,255)
+        elif g_force >= self.YELLOW_GFORCE or abs(angular_acceleration) >= self.YELLOW_ANGULAR_ACCELERATION:
+            return "YELLOW", (0,255,255)
+        else:
+            return "GREEN", (0,255,0)
