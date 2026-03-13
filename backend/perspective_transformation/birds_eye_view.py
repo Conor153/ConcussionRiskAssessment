@@ -164,9 +164,9 @@ class BirdsEyeView:
         # if len(speed) >= 3:
         #     old_speed = speed[-3]
         #     new_speed = speed[-1]
-        else:
-            old_speed = speed[-2]
-            new_speed = speed[-1]
+        # else:
+        old_speed = speed[-2]
+        new_speed = speed[-1]
         #Get the time at both frames and subtract to get time difference
         time_diff = new_speed[1] - old_speed[1] 
         if time_diff > 0:
@@ -240,17 +240,20 @@ class BirdsEyeView:
         #If angular velocity queue does not exist for the tracking ID append it
         if track_id not in self.angular_acceleration:
             self.angular_acceleration[track_id] = deque(maxlen=15)
+        
         angular_velocity = list(self.angular_velocity[track_id])
-
+        if len(angular_velocity) < 3:
+            self.acceleration[track_id].append((0.0))
+            return 0.0
         #If 7 frames are available take the angular velocity of the most recent frame and the 7th last frame
         #If there are only 4 take the angular velocity of the most recent frame and the 4th last frame
         #Else take last 2 angular velocity results
-        if len(angular_velocity) >= 4:
-            old_angular_velocity = angular_velocity[-4]
-            new_angular_velocity = angular_velocity[-1]
-        else:
-            old_angular_velocity = angular_velocity[0]
-            new_angular_velocity = angular_velocity[-1]
+        # if len(angular_velocity) >= 4:
+        #     old_angular_velocity = angular_velocity[-4]
+        #     new_angular_velocity = angular_velocity[-1]
+        # else:
+        old_angular_velocity = angular_velocity[-2]
+        new_angular_velocity = angular_velocity[-1]
         #Get the time at both frames and subtract to get time difference 
         time_diff = new_angular_velocity[1] - old_angular_velocity[1]
         if time_diff > 0:
