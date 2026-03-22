@@ -133,23 +133,23 @@ def pose_estimation(frame, bbox):
     player_box = frame[y1:y2, x1:x2]
 
     if player_box.size == 0:
-        return None, None, None
+        return None, None
     
-    #Connect the node to the left and right ears
+    #Connect the nose to the left and right ears
     connections = [(0,3),(0,4),(3,4)]
     #Run the model ove rthe bouning box
     player_pose = pose_model(player_box, verbose=False)
     
     if player_pose is None or len(player_pose) == 0:
-        return None, None, None
+        return None, None
     if player_pose[0].keypoints is None:
-        return None, None, None
+        return None, None
     
     keypoints = player_pose[0].keypoints.xy.cpu().numpy()
     
     #If there is 
     if len(keypoints) == 0:
-        return None, None, None
+        return None, None
     #For 
     for person_kpts in keypoints:
         person_kpts = person_kpts[0:5]
@@ -163,8 +163,8 @@ def pose_estimation(frame, bbox):
             if pt[0] > 0 and pt[1] > 0:
                 cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
 
-    #Return the Node, Left ear and Right ear
-    return person_kpts[0], person_kpts[3], person_kpts[4]
+    #Return the Left ear and Right ear
+    return person_kpts[3], person_kpts[4]
 
 def create_source(first_frame):
     """A function which allows users to select the source co-ordinates from frame 1"""
@@ -209,14 +209,11 @@ def read_video():
     """ Main video processing thread"""
 
     #Capture the uploaded video
-    capture = cv.VideoCapture("../dataset/videos/video12.mp4")
-
-
+    capture = cv.VideoCapture("../dataset/videos/green2.mp4")
     #Extract team colours from first frame
     # Get video properties
     frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
-
 
     isTrue, first_frame = capture.read()
     #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
@@ -279,34 +276,23 @@ def read_video():
                         if iou > best_iou:
                             best_iou = iou
                             best_player_box = bbox.xyxy[0].cpu().numpy() 
-                nose, left_ear, right_ear = pose_estimation(frame, best_player_box)
-                if nose is None or left_ear is None or right_ear is None:
+                left_ear, right_ear = pose_estimation(frame, best_player_box)
+                if left_ear is None or right_ear is None:
                     continue
-
+                
+                #Transform left and right ears with the homography
                 left_ear = transformation.transform_point(left_ear)
                 right_ear = transformation.transform_point(right_ear)
                 
-                # #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
-                angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
+                #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
+                angle = transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
                 angular_velocity = transformation.calculate_angular_velocity(track_id, current_time)
                 angular_acceleration = transformation.calculate_angular_acceleration(track_id)
-                
-                #Attach label with values for display purposes
-
-                #label = f"ID:{track_id} Angle{abs(round(angle))} Rad"
-                #label = f"ID:{track_id} Angle Velocity{round(angular_velocity)} Rad"
-                #label = f"ID:{track_id} Angle Acceleration {abs(round(angular_acceleration))} Rad^2"
-                
-                #label = f"ID:{track_id} Speed{round(speed)} MpS"
-                #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
-                label = f"ID:{track_id} G-Force:{round(g_force)} G"
                
-                #colour, colour_value = transformation.calculate_risk(g_force, angular_acceleration)
-                #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2pppppp
-                colour = get_dominant_colour(frame, best_player_box)
-                team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
-                team_counts[team_label] += 1
-                # Draw background rectangle and place text over it
+                #Attach label with values for display purposes
+                label = f"ID:{track_id} G-Force:{round(g_force)} G | AA {abs(round(angular_acceleration))}"
+                _, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
+                #Draw Bounding Box
                 cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
                 cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 

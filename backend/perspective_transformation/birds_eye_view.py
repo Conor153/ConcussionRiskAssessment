@@ -200,12 +200,11 @@ class BirdsEyeView:
         return abs(g_Force)
 
 
-    def calculate_angle(self, track_id, nose, left_ear, right_ear, current_time):
+    def calculate_angle(self, track_id, left_ear, right_ear, current_time):
         """Function to calculate angle displacent"""
         #If the track id is not in angle then add it to angle
         if track_id not in self.angle:
             self.angle[track_id] = deque(maxlen=15)
-        #print(f"ID: {track_id} / Nose: {nose} / LeftEar {left_ear} / RightEar {right_ear} / CurrentTime {current_time}")
         #Subtract the X and Y of the left and right ear
         dx = right_ear[0] - left_ear[0]
         dy = right_ear[1] - left_ear[1]
@@ -224,8 +223,9 @@ class BirdsEyeView:
         angle = list(self.angle[track_id])
 
         if len(angle) < 2:
-            self.current_speeds[track_id].append((0.0, current_time))
+            self.angular_velocity[track_id].append((0.0, current_time))
             return 0.0
+        
         #If 7 frames are available take the angular displacement of the most recent frame and the 7th last frame
         #If there are only 4 take the angular displacement of the most recent frame and the 4th last frame
         #Else take last 2 angular displacement results
@@ -241,7 +241,10 @@ class BirdsEyeView:
         #Get the time at both frames and subtract to get time difference
         time_diff = new_angle[1] - old_angle[1]
         if time_diff > 0:
-            angular_velocity = (new_angle[0] - old_angle[0])/time_diff
+            angle = new_angle[0] - old_angle[0]
+            angular_velocity = angle/time_diff
+            if track_id == 295:
+                print(f"AV {angular_velocity}")
             self.angular_velocity[track_id].append((angular_velocity, current_time))
             return angular_velocity
         else: 
@@ -261,14 +264,11 @@ class BirdsEyeView:
         #If 7 frames are available take the angular velocity of the most recent frame and the 7th last frame
         #If there are only 4 take the angular velocity of the most recent frame and the 4th last frame
         #Else take last 2 angular velocity results
-        if len(angular_velocity) >= 7:
-            old_angular_velocity = angular_velocity[-7]
+        if len(angular_velocity) >= 4:
+            old_angular_velocity = angular_velocity[-4]
             new_angular_velocity = angular_velocity[-1]
         elif len(angular_velocity) >= 3:
-            old_angular_velocity = angular_velocity[-2]
-            new_angular_velocity = angular_velocity[-1]
-        else:
-            old_angular_velocity = angular_velocity[0]
+            old_angular_velocity = angular_velocity[-3]
             new_angular_velocity = angular_velocity[-1]
         #Get the time at both frames and subtract to get time difference 
         time_diff = new_angular_velocity[1] - old_angular_velocity[1]
@@ -276,6 +276,8 @@ class BirdsEyeView:
             #Calculate the angular acceleration by subtracting the new and old angular velocitys to determine the acceleration that the angle moved
             angular_acceleration = (new_angular_velocity[0] - old_angular_velocity[0]) / time_diff
             self.angular_acceleration[track_id].append(angular_acceleration)
+            if track_id == 295:
+                print(f"ID: {track_id} AA {angular_acceleration}clw3")
             return angular_acceleration
         else:
             self.angular_acceleration[track_id].append((0.0))
