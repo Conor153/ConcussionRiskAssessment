@@ -1,3 +1,11 @@
+#See README.md for installation of PyTorch for ROCm 
+
+#
+#pytorch-triton-rocm @ file:///home/conor/Desktop/ConcussionRiskAssessment/backend/pytorch_triton_rocm-3.2.0%2Brocm6.4.2.git7e948ebf-cp312-cp312-linux_x86_64.whl#sha256=1afcda2bbef56589e678f96a2d7b433f8cfc19cb23b8deeb116e00805763ec7b
+#torch @ file:///home/conor/Desktop/ConcussionRiskAssessment/backend/torch-2.6.0%2Brocm6.4.2.git76481f7c-cp312-cp312-linux_x86_64.whl#sha256=5cd40bf7a4ea0999fcae34f07f80a3af4970e09d76eac40c4efc48cbe812695c
+#torchaudio @ file:///home/conor/Desktop/ConcussionRiskAssessment/backend/wheels/torchaudio-2.6.0%2Brocm6.4.2.gitd8831425-cp312-cp312-linux_x86_64.whl#sha256=48f0e635ef6d5fbf6a787f6f14b923102b6c14da7a966662ba7ac2f4f9fa9201
+#torchvision @ file:///home/conor/Desktop/ConcussionRiskAssessment/backend/torchvision-0.21.0%2Brocm6.4.2.git4040d51f-cp312-cp312-linux_x86_64.whl#sha256=bcb9f85b88b39b58cd71dd8e9d3e7eb68d914044004a5ad07e5ed2291d512a10
+
 absl-py==2.4.0
 certifi==2026.2.25
 cffi==2.0.0
@@ -29,7 +37,6 @@ psutil==7.2.2
 pycparser==3.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
-pytorch-triton-rocm @ file:///home/conor/Desktop/ConcussionRiskAssesment/backend/pytorch_triton_rocm-3.2.0%2Brocm6.4.2.git7e948ebf-cp312-cp312-linux_x86_64.whl#sha256=1afcda2bbef56589e678f96a2d7b433f8cfc19cb23b8deeb116e00805763ec7b
 PyYAML==6.0.3
 requests==2.32.5
 scikit-learn==1.8.0
@@ -39,10 +46,8 @@ six==1.17.0
 sounddevice==0.5.5
 sympy==1.13.1
 threadpoolctl==3.6.0
-torch @ file:///home/conor/Desktop/ConcussionRiskAssesment/backend/torch-2.6.0%2Brocm6.4.2.git76481f7c-cp312-cp312-linux_x86_64.whl#sha256=5cd40bf7a4ea0999fcae34f07f80a3af4970e09d76eac40c4efc48cbe812695c
-torchaudio @ file:///home/conor/Desktop/ConcussionRiskAssesment/backend/wheels/torchaudio-2.6.0%2Brocm6.4.2.gitd8831425-cp312-cp312-linux_x86_64.whl#sha256=48f0e635ef6d5fbf6a787f6f14b923102b6c14da7a966662ba7ac2f4f9fa9201
-torchvision @ file:///home/conor/Desktop/ConcussionRiskAssesment/backend/torchvision-0.21.0%2Brocm6.4.2.git4040d51f-cp312-cp312-linux_x86_64.whl#sha256=bcb9f85b88b39b58cd71dd8e9d3e7eb68d914044004a5ad07e5ed2291d512a10
 typing_extensions==4.15.0
 ultralytics==8.4.14
 ultralytics-thop==2.0.18
 urllib3==2.6.3
+

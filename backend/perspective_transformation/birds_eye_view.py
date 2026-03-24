@@ -34,6 +34,11 @@ class BirdsEyeView:
         self.angular_velocity = {} 
         self.angular_acceleration = {} 
 
+        self.RED_GFORCE = 80
+        self.YELLOW_GFORCE = 49
+        self.RED_ANGULAR_ACCELERATION = 5875
+        self.YELLOW_ANGULAR_ACCELERATION= 3512
+
     #Transform the BBox to get the centre bottom co-ordinates
     def transform_points(self, points: np.ndarray) -> np.ndarray:
         """Function to transform the players co-ordinates with the matrix"""
@@ -53,6 +58,15 @@ class BirdsEyeView:
         reshaped_points = bottom_centre_points.reshape(-1, 1, 2).astype(np.float32)
         transformed_points = cv2.perspectiveTransform(reshaped_points, self.matrix)
         return transformed_points.reshape(-1, 2)
+    
+        #Transform the BBox to get the centre bottom co-ordinates
+    def transform_point(self, point: np.ndarray) -> np.ndarray:
+        """Function to transform the players co-ordinates with the matrix"""
+        point = np.array(point, dtype=np.float32)
+        #reshape the numpy array and transform the points for homography
+        reshaped_points = point.reshape(-1, 1, 2).astype(np.float32)
+        transformed_point = cv2.perspectiveTransform(reshaped_points, self.matrix)
+        return transformed_point.reshape(-1)
 
     #Update the homography
     def update_matrix(self, frame):
@@ -147,21 +161,21 @@ class BirdsEyeView:
         #Convert the speed queue to a list
         speed = list(self.current_speeds[track_id])
         #If we are at frame 1 then there is only 1 speed is stored therfore set speed to 0
-        if len(speed) < 2:
+        if len(speed) < 3:
             self.acceleration[track_id].append((0.0))
             return 0.0
         #If 7 frames are available take the speed of the most recent frame and the 7th last frame
-        #If there are only 4 take the speed of the most recent frame and the 4th last frame
+        #If there are only 3 take the speed of the most recent frame and the 4th last frame
         #E;se take last 2 speed results
-        if len(speed) >= 7:
-            old_speed = speed[-7]
-            new_speed = speed[-1]
-        elif len(speed) >= 4:
-            old_speed = speed[-4]
-            new_speed = speed[-1]
-        else:
-            old_speed = speed[0]
-            new_speed = speed[-1]
+        # if len(speed) >= 7:
+        #     old_speed = speed[-7]
+        #     new_speed = speed[-1]
+        # if len(speed) >= 3:
+        #     old_speed = speed[-3]
+        #     new_speed = speed[-1]
+        # else:
+        old_speed = speed[-2]
+        new_speed = speed[-1]
         #Get the time at both frames and subtract to get time difference
         time_diff = new_speed[1] - old_speed[1] 
         if time_diff > 0:
@@ -186,7 +200,7 @@ class BirdsEyeView:
         return abs(g_Force)
 
 
-    def calculate_angle(self, track_id, nose, left_ear, right_ear, current_time):
+    def calculate_angle(self, track_id, left_ear, right_ear, current_time):
         """Function to calculate angle displacent"""
         #If the track id is not in angle then add it to angle
         if track_id not in self.angle:
@@ -200,16 +214,21 @@ class BirdsEyeView:
         self.angle[track_id].append((angle_rad, current_time))
         return angle_rad
 
-    def calculate_anglular_velocity(self, track_id, current_time):
-        """Function to calculate anglular velocity"""
+    def calculate_angular_velocity(self, track_id, current_time):
+        """Function to calculate angular velocity"""
         #If angular velocity queue does not exist for the tracking ID append it
         if track_id not in self.angular_velocity:
             self.angular_velocity[track_id] = deque(maxlen=15)
         #Convert the angle to a list
         angle = list(self.angle[track_id])
-        #If 7 frames are available take the anglular displacement of the most recent frame and the 7th last frame
-        #If there are only 4 take the anglular displacement of the most recent frame and the 4th last frame
-        #Else take last 2 anglular displacement results
+
+        if len(angle) < 2:
+            self.angular_velocity[track_id].append((0.0, current_time))
+            return 0.0
+        
+        #If 7 frames are available take the angular displacement of the most recent frame and the 7th last frame
+        #If there are only 4 take the angular displacement of the most recent frame and the 4th last frame
+        #Else take last 2 angular displacement results
         if len(angle) >= 7:
             old_angle = angle[-7]
             new_angle = angle[-1]
@@ -222,31 +241,34 @@ class BirdsEyeView:
         #Get the time at both frames and subtract to get time difference
         time_diff = new_angle[1] - old_angle[1]
         if time_diff > 0:
-            angular_velocity = (new_angle[0] - old_angle[0])/time_diff
+            angle = new_angle[0] - old_angle[0]
+            angular_velocity = angle/time_diff
+            if track_id == 295:
+                print(f"AV {angular_velocity}")
             self.angular_velocity[track_id].append((angular_velocity, current_time))
             return angular_velocity
         else: 
             self.angular_velocity[track_id].append((0.0, current_time))
             return 0
 
-    def calculate_anglular_acceleration(self, track_id):
-        """Function to calculate anglular acceleration"""
+    def calculate_angular_acceleration(self, track_id):
+        """Function to calculate angular acceleration"""
         #If angular velocity queue does not exist for the tracking ID append it
         if track_id not in self.angular_acceleration:
             self.angular_acceleration[track_id] = deque(maxlen=15)
+        
         angular_velocity = list(self.angular_velocity[track_id])
-
+        if len(angular_velocity) < 3:
+            self.angular_acceleration[track_id].append((0.0))
+            return 0.0
         #If 7 frames are available take the angular velocity of the most recent frame and the 7th last frame
         #If there are only 4 take the angular velocity of the most recent frame and the 4th last frame
         #Else take last 2 angular velocity results
-        if len(angular_velocity) >= 7:
-            old_angular_velocity = angular_velocity[-7]
-            new_angular_velocity = angular_velocity[-1]
-        elif len(angular_velocity) >= 4:
+        if len(angular_velocity) >= 4:
             old_angular_velocity = angular_velocity[-4]
             new_angular_velocity = angular_velocity[-1]
-        else:
-            old_angular_velocity = angular_velocity[0]
+        elif len(angular_velocity) >= 3:
+            old_angular_velocity = angular_velocity[-3]
             new_angular_velocity = angular_velocity[-1]
         #Get the time at both frames and subtract to get time difference 
         time_diff = new_angular_velocity[1] - old_angular_velocity[1]
@@ -254,7 +276,17 @@ class BirdsEyeView:
             #Calculate the angular acceleration by subtracting the new and old angular velocitys to determine the acceleration that the angle moved
             angular_acceleration = (new_angular_velocity[0] - old_angular_velocity[0]) / time_diff
             self.angular_acceleration[track_id].append(angular_acceleration)
+            if track_id == 295:
+                print(f"ID: {track_id} AA {angular_acceleration}clw3")
             return angular_acceleration
         else:
             self.angular_acceleration[track_id].append((0.0))
             return 0
+        
+    def calculate_risk(self, g_force, angular_acceleration):
+        if g_force >= self.RED_GFORCE or abs(angular_acceleration) >= self.RED_ANGULAR_ACCELERATION:
+            return "RED", (0,0,255)
+        elif g_force >= self.YELLOW_GFORCE or abs(angular_acceleration) >= self.YELLOW_ANGULAR_ACCELERATION:
+            return "YELLOW", (0,255,255)
+        else:
+            return "GREEN", (0,255,0)

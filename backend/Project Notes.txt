@@ -1,3 +1,32 @@
+Trevor Lawrence
+
+Speed
+Before Tackle
+made 7 yards
+6.4008 /Mps
+
+Tackle
+Moves to 0 yards per second
+
+
+Accel
+
+
+G-Force
+
+
+
+Angular
+
+
+
+
+
+
+
+
+
+
 Project Notes
 Week 1
 

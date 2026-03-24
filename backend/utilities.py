@@ -1,9 +1,10 @@
 import cv2 as cv
 import torch
+from torchvision import ops
 from ultralytics import YOLO
 import numpy as np
 from time import time
-from perspective_transformation import BirdsEyeView #AngularCalculations
+from perspective_transformation import BirdsEyeView 
 import math 
 from sklearn.cluster import KMeans
 from collections import defaultdict, deque
@@ -15,7 +16,7 @@ from collections import defaultdict, deque
 
 #Models
 model = YOLO('../models/AMDGPUv2TrainYOLOS/weights/AMDGPUTrainYOLOs.pt')
-pose_model = YOLO('../models/PoseDetection/yolo11n-pose.pt')
+pose_model = YOLO('../models/PoseDetection/yolo11s-pose.pt')
 
 #Use GPU if available
 if torch.cuda.is_available():
@@ -132,24 +133,23 @@ def pose_estimation(frame, bbox):
     player_box = frame[y1:y2, x1:x2]
 
     if player_box.size == 0:
-        return None, None, None
+        return None, None
     
-    #Connect the node to the left and right ears
+    #Connect the nose to the left and right ears
     connections = [(0,3),(0,4),(3,4)]
     #Run the model ove rthe bouning box
     player_pose = pose_model(player_box, verbose=False)
     
     if player_pose is None or len(player_pose) == 0:
-        return None, None, None
+        return None, None
     if player_pose[0].keypoints is None:
-        return None, None, None
+        return None, None
     
     keypoints = player_pose[0].keypoints.xy.cpu().numpy()
     
     #If there is 
     if len(keypoints) == 0:
-        return None, None, None
-    
+        return None, None
     #For 
     for person_kpts in keypoints:
         person_kpts = person_kpts[0:5]
@@ -163,8 +163,8 @@ def pose_estimation(frame, bbox):
             if pt[0] > 0 and pt[1] > 0:
                 cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
 
-    #Return the Node, Left ear and Right ear
-    return person_kpts[0], person_kpts[3], person_kpts[4]
+    #Return the Left ear and Right ear
+    return person_kpts[3], person_kpts[4]
 
 def create_source(first_frame):
     """A function which allows users to select the source co-ordinates from frame 1"""
@@ -193,24 +193,27 @@ def create_source(first_frame):
     print(f"Selected coordinates: {source_coordinates}")
     print(f"Selected coordinates: {source_coordinates[1]}")
     print(f"Selected coordinates: {source_coordinates[1][1]}")
-    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1], -y[0]))
+    source_coordinates = sorted(source_coordinates, key=lambda y: (y[1]))
+    if source_coordinates[0][0]>source_coordinates[1][0]:
+        swap = source_coordinates[0]
+        source_coordinates[0] = source_coordinates[1]
+        source_coordinates[1] = swap
+    if source_coordinates[2][0]<source_coordinates[3][0]:
+        swap = source_coordinates[2]
+        source_coordinates[2] = source_coordinates[3]
+        source_coordinates[3] = swap
     print(f"Selected coordinates: {source_coordinates}")
-        
-
     return source_coordinates
 
 def read_video():
     """ Main video processing thread"""
 
     #Capture the uploaded video
-    capture = cv.VideoCapture("../dataset/videos/video4.mp4")
-
-
+    capture = cv.VideoCapture("../dataset/videos/green2.mp4")
     #Extract team colours from first frame
     # Get video properties
     frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
-
 
     isTrue, first_frame = capture.read()
     #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
@@ -237,8 +240,9 @@ def read_video():
         #Calculate time with the video
         current_time = frame_count/fps
         #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
-        results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.6, iou=0.6, tracker="bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.6, tracker="botsort.yaml")  
+        results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.4, iou=0.4, tracker="../models/Trackers/bytetrack.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.4, iou=0.5, tracker="../models/Trackers/botsort.yaml")  
+        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.5, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
         #Transform the points of the bounding box 
@@ -246,45 +250,50 @@ def read_video():
         #Process each detected bounding box
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])    
-            if cls == 2: #Person class is 2
-
-                bbox = box.xyxy[0].cpu().numpy()
-                x1, y1, x2, y2 = map(int, bbox)
+            #print(f"Class: {cls} - Name: {result.names[cls]}")
+            if cls == 0: #Helmet class is 0
+                helmet_box = box.xyxy[0].cpu().numpy()
+                x1, y1, x2, y2 = map(int, helmet_box)
                 x,y = transformed_coords[i]
                 track_id = int(box.id[0]) if box.id is not None else None
                 #Assign a lable ID for player identification during video
                 label = f"ID:{track_id}"
-
                 #Calculate speed, acceleration and G-force of ther player using their transformed X and Y co-ordinates
                 speed = transformation.calculate_speed(track_id, (x, y), current_time)
                 acceleration = transformation.calculate_acceleration(track_id)
-                g_force = transformation.calculate_GForce(track_id)
+                g_force = transformation.calculate_GForce(track_id)            
                 
-                #Estimate the pose of the player bounding box and retrieve the posiions of the node and ears
-                nose, left_ear, right_ear = pose_estimation(frame, bbox)
-                if nose is None or left_ear is None or right_ear is None:
+                #To get matching helemt and player box
+                best_iou = 0
+                for j, bbox in enumerate(boxes):
+                    player_cls = int(bbox.cls[0])  
+                    if player_cls == 2: #Player class is 0
+                        player_box = bbox.xyxy[0].cpu().numpy()
+                        px1, py1, px2, py2 = map(int, player_box)
+                        helmet_box = torch.tensor([[x1, y1, x2, y2]], dtype=torch.float)
+                        player_box = torch.tensor([[px1, py1, px2, py2]], dtype=torch.float)
+                        iou = ops.box_iou(player_box, helmet_box)
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_player_box = bbox.xyxy[0].cpu().numpy() 
+                left_ear, right_ear = pose_estimation(frame, best_player_box)
+                if left_ear is None or right_ear is None:
                     continue
-                #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
-                angle = transformation.calculate_angle(track_id, nose, left_ear, right_ear, current_time)
-                angular_velocity = transformation.calculate_anglular_velocity(track_id, current_time)
-                angular_acceleration = transformation.calculate_anglular_acceleration(track_id)
-                #Attach label with values for display purposes
-
-                #label = f"ID:{track_id} Angle{abs(round(angle))} Rad"
-                #label = f"ID:{track_id} Angle Velocity{round(angular_velocity)} Rad"
-                #label = f"ID:{track_id} Angle Acceleration {abs(round(angular_acceleration))} Rad^2"
                 
-                label = f"ID:{track_id} Speed{round(speed)} MpS"
-                #label = f"ID:{track_id} Acceleration:{round(acceleration)} MS^2"
-                #label = f"ID:{track_id} G-Force:{round(g_force)} G"
-                 
+                #Transform left and right ears with the homography
+                left_ear = transformation.transform_point(left_ear)
+                right_ear = transformation.transform_point(right_ear)
+                
+                #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
+                angle = transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
+                angular_velocity = transformation.calculate_angular_velocity(track_id, current_time)
+                angular_acceleration = transformation.calculate_angular_acceleration(track_id)
                
-                #Get dominant colour of the player bounidng box and classify the player to team 1 or team 2pppppp
-                colour = get_dominant_colour(frame, bbox)
-                team_label, box_colour = classify_team_by_colour(colour, team1_info, team2_info)
-                team_counts[team_label] += 1
-                # Draw background rectangle and place text over it
-                cv.rectangle(frame,(x1, y1 - 20),(x2+100, y1),box_colour,-1)
+                #Attach label with values for display purposes
+                label = f"ID:{track_id} G-Force:{round(g_force)} G | AA {abs(round(angular_acceleration))}"
+                _, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
+                #Draw Bounding Box
+                cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
                 cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
         #Resize the frame
