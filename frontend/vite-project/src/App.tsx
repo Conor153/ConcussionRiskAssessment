@@ -1,33 +1,39 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useRef, useState } from 'react'
+import './output.css'
+import Footer from "./Footer";
+import Header from "./Header";
+import VideoUpload from "./VideoUpload"
+import VideoPlayer from "./VideoPlayer"
+import Table from './Table';
+
+export interface Player {
+  id: number;
+  g_force: number;
+  angular_acceleration: number;
+  risk: string;
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [video, setVideo] = useState<string>("");
+  const [players, setPlayer] = useState<Player[]>([]);
 
   return (
     <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <Header/>
+      <div className="VideoUpload">
+      <VideoUpload setVideo={setVideo} setPlayer={setPlayer} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+
+      <div className="VideoPlayer">
+        <VideoPlayer video={video}/>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+
+      <div className="Results">
+        <Table players={players}/>
+      </div>
+      <Footer/>
     </div>
+    
   )
 }
 
