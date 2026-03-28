@@ -3,6 +3,8 @@ import torch
 from torchvision import ops
 from ultralytics import YOLO
 import numpy as np
+import subprocess
+import os
 from time import time
 from perspective_transformation import BirdsEyeView 
 import math 
@@ -128,10 +130,11 @@ def pose_estimation(frame, bbox):
     The key points are mapped to the identified position
     Returned is the nose, and ears"""
     
-    # Get the corners pof the bounding box
+    #Get the corners of the bounding box
     x1, y1, x2, y2 = map(int, bbox)
     player_box = frame[y1:y2, x1:x2]
 
+    #Return left and right ear as None
     if player_box.size == 0:
         return None, None
     
@@ -140,8 +143,10 @@ def pose_estimation(frame, bbox):
     #Run the model ove rthe bouning box
     player_pose = pose_model(player_box, verbose=False)
     
+    #Return left and right ear as None
     if player_pose is None or len(player_pose) == 0:
         return None, None
+    #Return left and right ear as None
     if player_pose[0].keypoints is None:
         return None, None
     
@@ -166,33 +171,36 @@ def pose_estimation(frame, bbox):
     #Return the Left ear and Right ear
     return person_kpts[3], person_kpts[4]
 
-def create_source(first_frame):
-    """A function which allows users to select the source co-ordinates from frame 1"""
-    source_coordinates = []
-    def get_pixel_coordinates(event, x, y, flags, param):
-        if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
-            source_coordinates.append((x, y))
-            cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
+def sort_source(source_coordinates):
+    """A function which sorts the source co-ordinates from frame 1"""
+    # source_coordinates = []
+    # def get_pixel_coordinates(event, x, y, flags, param):
+    #     if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
+    #         source_coordinates.append((x, y))
+    #         cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
 
-    print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
-    param = {'frame': first_frame.copy()}
-    cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
-    cv.setMouseCallback("Frame", get_pixel_coordinates, param)
+    # print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
+    # param = {'frame': first_frame.copy()}
+    # cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
+    # cv.setMouseCallback("Frame", get_pixel_coordinates, param)
     
-    while True:
-        display_frame = param['frame'].copy()
-        cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press Q when done", 
-                  (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv.imshow("Frame", display_frame)
-        key = cv.waitKey(1) & 0xFF
-        # Press Q to exit
-        if key == ord('q'):
-            break
+    # while True:
+    #     display_frame = param['frame'].copy()
+    #     cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press Q when done", 
+    #               (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #     cv.imshow("Frame", display_frame)
+    #     key = cv.waitKey(1) & 0xFF
+    #     # Press Q to exit
+    #     if key == ord('q'):
+    #         break
     
-    cv.destroyAllWindows()
-    print(f"Selected coordinates: {source_coordinates}")
-    print(f"Selected coordinates: {source_coordinates[1]}")
-    print(f"Selected coordinates: {source_coordinates[1][1]}")
+    # cv.destroyAllWindows()
+
+    #Sort the sourc co-ordinates into following order
+    #Top-Left
+    #Top-Right
+    #Bottom Right
+    #Bottom Left
     source_coordinates = sorted(source_coordinates, key=lambda y: (y[1]))
     if source_coordinates[0][0]>source_coordinates[1][0]:
         swap = source_coordinates[0]
@@ -202,32 +210,44 @@ def create_source(first_frame):
         swap = source_coordinates[2]
         source_coordinates[2] = source_coordinates[3]
         source_coordinates[3] = swap
-    print(f"Selected coordinates: {source_coordinates}")
     return source_coordinates
 
-def read_video():
+def process_video(video_path, source_points):
     """ Main video processing thread"""
 
     #Capture the uploaded video
-    capture = cv.VideoCapture("../dataset/videos/green2.mp4")
-    #Extract team colours from first frame
-    # Get video properties
+    capture = cv.VideoCapture(video_path)
+
+    #Get video properties
     frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
+    frame_width = int(capture.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(capture.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-    isTrue, first_frame = capture.read()
+    #Format output video into mp4v
+    fourcc = cv.VideoWriter_fourcc(*"mp4v")
+    #Set the output of 
+    outPath = 'processed_videos/processed_mp4_video.mp4'
+    #Create an output to write the file to
+    output = cv.VideoWriter(outPath, fourcc, fps/4, (frame_width, frame_height))
+
+    #isTrue, first_frame = capture.read()
     #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
-    team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
+    #team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
     #Track statistics
-    team_counts = defaultdict(int)
+
+    #Risk Result dictionary to store peak risk values for identified IDs
+    risk_result = {}
+
     #Target matrix for Homography
     target_width = 9.144 #meters of 1 10 yard line to a yard line 10 yards apart
     target_height = 26.79192 #meters distance between sideline numbers
 
-    #Get user to select the source co-ordinates
-    source_values = create_source(first_frame)
+    #Sort the source co-ordinates
+    source_values = sort_source(source_points)
     source = np.array(source_values, dtype=np.float32)
     target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
+
     #Create BirdsEyeView object to create homography and calaulate metrics
     transformation = BirdsEyeView(source, target)
     #Process video 
@@ -241,8 +261,6 @@ def read_video():
         current_time = frame_count/fps
         #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
         results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.4, iou=0.4, tracker="../models/Trackers/bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.4, iou=0.5, tracker="../models/Trackers/botsort.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.5, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
         #Transform the points of the bounding box 
@@ -250,8 +268,8 @@ def read_video():
         #Process each detected bounding box
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])    
-            #print(f"Class: {cls} - Name: {result.names[cls]}")
-            if cls == 0: #Helmet class is 0
+            #Track helmet class which is 0
+            if cls == 0:
                 helmet_box = box.xyxy[0].cpu().numpy()
                 x1, y1, x2, y2 = map(int, helmet_box)
                 x,y = transformed_coords[i]
@@ -259,15 +277,16 @@ def read_video():
                 #Assign a lable ID for player identification during video
                 label = f"ID:{track_id}"
                 #Calculate speed, acceleration and G-force of ther player using their transformed X and Y co-ordinates
-                speed = transformation.calculate_speed(track_id, (x, y), current_time)
-                acceleration = transformation.calculate_acceleration(track_id)
+                transformation.calculate_speed(track_id, (x, y), current_time)
+                transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)            
                 
-                #To get matching helemt and player box
+                #IoU to get matching helemt and player box
                 best_iou = 0
                 for j, bbox in enumerate(boxes):
                     player_cls = int(bbox.cls[0])  
-                    if player_cls == 2: #Player class is 0
+                    #Track player class which is 2
+                    if player_cls == 2:
                         player_box = bbox.xyxy[0].cpu().numpy()
                         px1, py1, px2, py2 = map(int, player_box)
                         helmet_box = torch.tensor([[x1, y1, x2, y2]], dtype=torch.float)
@@ -285,30 +304,76 @@ def read_video():
                 right_ear = transformation.transform_point(right_ear)
                 
                 #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
-                angle = transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
-                angular_velocity = transformation.calculate_angular_velocity(track_id, current_time)
+                transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
+                transformation.calculate_angular_velocity(track_id, current_time)
                 angular_acceleration = transformation.calculate_angular_acceleration(track_id)
                
                 #Attach label with values for display purposes
                 label = f"ID:{track_id} G-Force:{round(g_force)} G | AA {abs(round(angular_acceleration))}"
-                _, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
-                #Draw Bounding Box
+                risk, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
+
+                #If the track_id is not in the dictionary
+                if track_id not in risk_result:
+                    #Add it to dictionary with intial values
+                    risk_result[track_id] = {
+                        "track_id": track_id, 
+                        "g_force" : round(g_force), 
+                        "angular_acceleration": abs(round(angular_acceleration)), 
+                        "risk": risk}
+                #Else if the track_id is in the dictionary
+                else:
+                    #If the risk is red update the risk and add a pause to the video
+                    if risk == "RED":
+                        risk_result[track_id].update({"risk": risk})
+                        for i in range(int(fps * 3)):
+                            output.write(frame)
+                    #If the risk is Yellow and red is not already recorded for the player update the result to yellow  
+                    elif risk == "YELLOW" and risk_result[track_id].get("risk") != "RED":
+                        risk_result[track_id].update({"risk": risk})
+
+                    #If higher G-force recorded update the value in the dictionary
+                    if risk_result[track_id].get("g_force") < round(g_force):
+                        risk_result[track_id].update({"g_force": round(g_force)}) 
+                    #If higher angular acceleration recorded update the value in the dictionary
+                    if risk_result[track_id].get("angular_acceleration") < abs(round(angular_acceleration)): 
+                            risk_result[track_id].update({"angular_acceleration": abs(round(angular_acceleration))})
+
+                #Draw Bounding Box with labels
                 cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
                 cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
-        #Resize the frame
-        frameResized = rescaleFrame(frame, scale=0.75)
-        key = cv.waitKey(1) & 0xFF
-        cv.imshow("Team Classification", frameResized)
-        #Pause if 'p' is pressed
-        if key  == ord('p'):
-            cv.waitKey(0)
-        #Stop if 'q' is pressed
-        if key == ord('q'):
-            break
-        frame_count+= 1
-    capture.release()
-    cv.destroyAllWindows()
-    
+                #track_id, g_force, angular_acceleration, risk
 
-read_video()
+        #Resize the frame
+        #frameResized = rescaleFrame(frame, scale=0.75)
+        #key = cv.waitKey(1) & 0xFF
+        #cv.imshow("Team Classification", frameResized)
+
+        #Write the frame to create video
+        output.write(frame)
+           
+        #Pause if 'p' is pressed
+        # if key  == ord('p'):
+        #     cv.waitKey(0)
+        #Stop if 'q' is pressed
+        # if key == ord('q'):
+        #     break
+
+        #Increase frame counter for time calculation
+        frame_count+= 1
+
+    #Release capture and output
+    capture.release()
+    output.release()
+
+    #Convert file using ffmeg so that it is displayable in browser as type H.264
+    videoPath = 'processed_videos/processed_video.mp4'
+    subprocess.run([
+        "ffmpeg", "-i", outPath,
+        "-vcodec", "libx264",
+        "-y", videoPath
+    ])
+
+    #Return the video and risk results
+    return videoPath, list(risk_result.values())
+    

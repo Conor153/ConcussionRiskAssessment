@@ -243,8 +243,6 @@ class BirdsEyeView:
         if time_diff > 0:
             angle = new_angle[0] - old_angle[0]
             angular_velocity = angle/time_diff
-            if track_id == 295:
-                print(f"AV {angular_velocity}")
             self.angular_velocity[track_id].append((angular_velocity, current_time))
             return angular_velocity
         else: 
@@ -276,8 +274,6 @@ class BirdsEyeView:
             #Calculate the angular acceleration by subtracting the new and old angular velocitys to determine the acceleration that the angle moved
             angular_acceleration = (new_angular_velocity[0] - old_angular_velocity[0]) / time_diff
             self.angular_acceleration[track_id].append(angular_acceleration)
-            if track_id == 295:
-                print(f"ID: {track_id} AA {angular_acceleration}clw3")
             return angular_acceleration
         else:
             self.angular_acceleration[track_id].append((0.0))

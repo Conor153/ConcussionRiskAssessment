@@ -1,10 +1,10 @@
 import axios from "axios";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Player } from "./App";
+import { ChangeEvent, useRef, useState } from "react";
+import { Results } from "./App";
 
 //Pass in setPlayer and setVideo functions from App.tsx
 interface Props {
-  setPlayer: (players: Player[]) => void;
+  setResults: (results: Results[]) => void;
   setVideo: (video: string) => void;
 }
 
@@ -58,21 +58,22 @@ function VideoUpload(props: Props) {
   };
   //Post video to backend for processing
   const handleVideoUpload = (event: React.MouseEvent) => {
-    if (!file || points.length!=4) return;
+    if (!file || points.length != 4) return;
+    setHidden(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("points", JSON.stringify(points));
-
-    try {
-      axios
-        .post(`http://localhost:8000/`, formData)
-        .then((response) => {
-          console.log(response.data);
-        })
-        .catch((error) => {
-          console.log(error.message);
-        });
-    } catch {}
+    axios
+      .post(`http://localhost:8000/upload/`, formData)
+      .then((response) => {
+        console.log(response.data.output_path);
+        props.setVideo(response.data.output_path);
+        console.log(response.data.risk_results);
+        props.setResults(response.data.risk_results);
+      })
+      .catch((error) => {
+        console.log(error.message);
+      });
   };
 
   //Function to handle selected co-ordinates
@@ -82,7 +83,7 @@ function VideoUpload(props: Props) {
     const video = idVideo.current;
     if (ctx != null && video != null) {
       ctx.fillStyle = "#FF5F1F";
-      ctx.fillRect(e.nativeEvent.offsetX, e.nativeEvent.offsetY, 5, 5);
+      ctx.fillRect(e.nativeEvent.offsetX - 4, e.nativeEvent.offsetY - 4, 8, 8);
       const co_ordinate = {
         x: e.nativeEvent.offsetX,
         y: e.nativeEvent.offsetY,
@@ -90,10 +91,10 @@ function VideoUpload(props: Props) {
       newPoints.push(co_ordinate);
       if (newPoints.length > 4) {
         newPoints.shift();
-        ctx.drawImage(video, 0, 0)
+        ctx.drawImage(video, 0, 0);
         setPoints(newPoints);
         newPoints.forEach((p) => {
-          ctx.fillRect(p.x, p.y, 5, 5);
+          ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
         });
       } else {
         setPoints(newPoints);

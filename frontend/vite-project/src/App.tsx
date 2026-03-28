@@ -1,40 +1,41 @@
-import { useRef, useState } from 'react'
-import './output.css'
+import { useRef, useState } from "react";
+import "./output.css";
 import Footer from "./Footer";
 import Header from "./Header";
-import VideoUpload from "./VideoUpload"
-import VideoPlayer from "./VideoPlayer"
-import Table from './Table';
+import VideoUpload from "./VideoUpload";
+import VideoPlayer from "./VideoPlayer";
+import Table from "./Table";
 
-export interface Player {
-  id: number;
+//Interfac eto store risk Results
+export interface Results {
+  track_id: number;
   g_force: number;
   angular_acceleration: number;
   risk: string;
 }
 
 function App() {
+  //States to store video and results so that they are accessible in other components
   const [video, setVideo] = useState<string>("");
-  const [players, setPlayer] = useState<Player[]>([]);
+  const [results, setResults] = useState<Results[]>([]);
 
   return (
     <div className="App">
-      <Header/>
+      <Header />
       <div className="VideoUpload">
-      <VideoUpload setVideo={setVideo} setPlayer={setPlayer} />
+        <VideoUpload setVideo={setVideo} setResults={setResults} />
       </div>
 
       <div className="VideoPlayer">
-        <VideoPlayer video={video}/>
+        <VideoPlayer video={video} />
       </div>
 
       <div className="Results">
-        <Table players={players}/>
+        <Table results={results} />
       </div>
-      <Footer/>
+      <Footer />
     </div>
-    
-  )
+  );
 }
 
-export default App
+export default App;

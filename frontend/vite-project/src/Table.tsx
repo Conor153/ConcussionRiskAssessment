@@ -1,14 +1,14 @@
-import { Player } from "./App";
+import { Results } from "./App";
 
 interface Props {
-  players: Player[];
+  results: Results[];
 }
 
 function Table(props: Props) {
-
-  const greenRisk = props.players.filter((player) => player.risk === "GREEN");
-  const yellowRisk = props.players.filter((player) => player.risk === "YELLOW");
-  const redRisk = props.players.filter((player) => player.risk === "RED");
+  //Filter the results into 3 arrays absed on returned risk colour
+  const greenRisk = props.results.filter((result) => result.risk === "GREEN");
+  const yellowRisk = props.results.filter((result) => result.risk === "YELLOW");
+  const redRisk = props.results.filter((result) => result.risk === "RED");
 
   return (
     <table>
@@ -19,9 +19,14 @@ function Table(props: Props) {
           <th>Red</th>
         </tr>
         <tr>
-          <th>G-Force 49G | Angular Acceleration 3512 Rad/s^2</th>
-          <th>G-Force 49G and 80G | Angular Acceleration 3512 & 5875 Rad/s^2</th>
-          <th>G-Force 80G | Angular Acceleration 5875 Rad/s^2</th>
+          <th>G-Force 49G</th>
+          <th>G-Force 49G and 80G</th>
+          <th>G-Force 80G</th>
+        </tr>
+        <tr>
+          <th>Angular Acceleration 3512 Rad/s^2</th>
+          <th>Angular Acceleration 3512 & 5875 Rad/s^2</th>
+          <th>Angular Acceleration 5875 Rad/s^2</th>
         </tr>
       </thead>
       <tbody>
@@ -37,9 +42,10 @@ function Table(props: Props) {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Loop through the green risk results and store them into the table */}
                   {greenRisk.map((green, index) => (
                     <tr key={index}>
-                      <td>{green.id}</td>
+                      <td>{green.track_id}</td>
                       <td>{green.g_force}</td>
                       <td>{green.angular_acceleration}</td>
                     </tr>
@@ -59,9 +65,10 @@ function Table(props: Props) {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Loop through the yellow risk results and store them into the table */}
                   {yellowRisk.map((yellow, index) => (
                     <tr key={index}>
-                      <td>{yellow.id}</td>
+                      <td>{yellow.track_id}</td>
                       <td>{yellow.g_force}</td>
                       <td>{yellow.angular_acceleration}</td>
                     </tr>
@@ -81,9 +88,10 @@ function Table(props: Props) {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Loop through the red risk results and store them into the table */}
                   {redRisk.map((red, index) => (
                     <tr key={index}>
-                      <td>{red.id}</td>
+                      <td>{red.track_id}</td>
                       <td>{red.g_force}</td>
                       <td>{red.angular_acceleration}</td>
                     </tr>
