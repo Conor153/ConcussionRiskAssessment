@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import "./output.css";
+import { useState } from "react";
+import "./index.css";
 import Footer from "./Footer";
 import Header from "./Header";
 import VideoUpload from "./VideoUpload";
@@ -18,20 +18,24 @@ function App() {
   //States to store video and results so that they are accessible in other components
   const [video, setVideo] = useState<string>("");
   const [results, setResults] = useState<Results[]>([]);
+  const [videoPlayer, setvideoPlayerVisibility] = useState(true);
+  const [table, setTableVisibility] = useState(true);
 
   return (
-    <div className="App">
+    <div className="min-h-screen bg-tertiary flex flex-col">
       <Header />
-      <div className="VideoUpload">
-        <VideoUpload setVideo={setVideo} setResults={setResults} />
-      </div>
+      <div className="max-w-l w-full mt-[1%] mx-auto p-4">
+        <div className="VideoUpload py-4">
+          <VideoUpload setVideo={setVideo} setResults={setResults} setTableVisibility={setTableVisibility} setvideoPlayerVisibility={setvideoPlayerVisibility}/>
+        </div>
 
-      <div className="VideoPlayer">
-        <VideoPlayer video={video} />
-      </div>
+        <div className="VideoPlayer py-4">
+          <VideoPlayer video={video} videoPlayer={videoPlayer}/>
+        </div>
 
-      <div className="Results">
-        <Table results={results} />
+        <div className="Results py-4">
+          <Table results={results} table={table}/>
+        </div>
       </div>
       <Footer />
     </div>

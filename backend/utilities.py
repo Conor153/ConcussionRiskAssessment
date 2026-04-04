@@ -213,10 +213,12 @@ def sort_source(source_coordinates):
     return source_coordinates
 
 def process_video(video_path, source_points):
+#def process_video():
     """ Main video processing thread"""
 
     #Capture the uploaded video
     capture = cv.VideoCapture(video_path)
+    #capture = cv.VideoCapture("/home/conor/Desktop/ConcussionRiskAssessment/dataset/videos/green.mp4")
 
     #Get video properties
     frame_count = 0
@@ -245,6 +247,7 @@ def process_video(video_path, source_points):
 
     #Sort the source co-ordinates
     source_values = sort_source(source_points)
+    print(source_values)
     source = np.array(source_values, dtype=np.float32)
     target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
 
@@ -283,6 +286,7 @@ def process_video(video_path, source_points):
                 
                 #IoU to get matching helemt and player box
                 best_iou = 0
+                best_player_box = None
                 for j, bbox in enumerate(boxes):
                     player_cls = int(bbox.cls[0])  
                     #Track player class which is 2
@@ -294,7 +298,9 @@ def process_video(video_path, source_points):
                         iou = ops.box_iou(player_box, helmet_box)
                         if iou > best_iou:
                             best_iou = iou
-                            best_player_box = bbox.xyxy[0].cpu().numpy() 
+                            best_player_box = bbox.xyxy[0].cpu().numpy()             
+                if best_player_box is None:
+                    continue
                 left_ear, right_ear = pose_estimation(frame, best_player_box)
                 if left_ear is None or right_ear is None:
                     continue
@@ -311,6 +317,10 @@ def process_video(video_path, source_points):
                 #Attach label with values for display purposes
                 label = f"ID:{track_id} G-Force:{round(g_force)} G | AA {abs(round(angular_acceleration))}"
                 risk, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
+                
+                #Draw Bounding Box with labels
+                cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
+                cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
                 #If the track_id is not in the dictionary
                 if track_id not in risk_result:
@@ -325,7 +335,7 @@ def process_video(video_path, source_points):
                     #If the risk is red update the risk and add a pause to the video
                     if risk == "RED":
                         risk_result[track_id].update({"risk": risk})
-                        for i in range(int(fps * 3)):
+                        for i in range(int(fps * 2)):
                             output.write(frame)
                     #If the risk is Yellow and red is not already recorded for the player update the result to yellow  
                     elif risk == "YELLOW" and risk_result[track_id].get("risk") != "RED":
@@ -337,10 +347,6 @@ def process_video(video_path, source_points):
                     #If higher angular acceleration recorded update the value in the dictionary
                     if risk_result[track_id].get("angular_acceleration") < abs(round(angular_acceleration)): 
                             risk_result[track_id].update({"angular_acceleration": abs(round(angular_acceleration))})
-
-                #Draw Bounding Box with labels
-                cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
-                cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
                 #track_id, g_force, angular_acceleration, risk
 
@@ -376,4 +382,3 @@ def process_video(video_path, source_points):
 
     #Return the video and risk results
     return videoPath, list(risk_result.values())
-    
