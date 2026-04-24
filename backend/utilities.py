@@ -3,6 +3,8 @@ import torch
 from torchvision import ops
 from ultralytics import YOLO
 import numpy as np
+import subprocess
+import os
 from time import time
 from perspective_transformation import BirdsEyeView 
 import math 
@@ -24,114 +26,17 @@ if torch.cuda.is_available():
     pose_model.to('cuda:0')
 print(f"Model device: {model.device}, Pose device: {pose_model.device}")
 
-#Function to resize the window frame
-def rescaleFrame(frame, scale=0.75):
-    width = int(frame.shape[1] * scale)
-    height = int(frame.shape[0] * scale)
-    dimensions = (width, height)
-    return cv.resize(frame, dimensions, interpolation=cv.INTER_AREA)
-
-#Function to get the domiante colour of the players jersey
-def get_dominant_colour(frame, bbox):
-    #Get the co-ordinates of the box
-    x1, y1, x2, y2 = map(int, bbox)
-    #Ensure coordinates are within bounds
-    x1 = max(0, x1)
-    y1 = max(0, y1)
-    x2 = min(frame.shape[1], x2)
-    y2 = min(frame.shape[0], y2)
-    #Extract the player region
-    playerBox = frame[y1:y2, x1:x2]
-    #Get the height of the players box
-    height = playerBox.shape[0]
-    #Get the upperpart of the player body to get jersey colour
-    torso = playerBox[int(height*0.30):int(height*0.5), :]
-    #Convert the jersey colour to HSV
-    hsv_roi = cv.cvtColor(torso, cv.COLOR_BGR2HSV)
-    #Create mask to exclude green colours for grass
-    lower_green = np.array([35, 40, 40])
-    upper_green = np.array([85, 255, 255])
-    green_mask = cv.inRange(hsv_roi, lower_green, upper_green)
-    #Exclude colour green
-    mask = cv.bitwise_not(green_mask)
-    #Calculate mean colour
-    if cv.countNonZero(mask) > 0:
-        avg_colour_bgr = cv.mean(torso, mask=mask)[:3]
-    else:
-        avg_colour_bgr = cv.mean(torso)[:3]
-    #Return the average colour
-    return np.array(avg_colour_bgr)
-
-#Extract the team colours
-def extract_team_colours_from_frame(frame, model):
-    results = model(frame)
-    result = results[0]
-    boxes = result.boxes
-    player_colours = []
-    #For all boxes get the dominant colour
-    for box in boxes:
-        cls = int(box.cls[0])
-        if cls == 1:#Jersey
-            bbox = box.xyxy[0].cpu().numpy()
-            colour = get_dominant_colour(frame, bbox)
-            if colour is not None:
-                player_colours.append(colour)
-    #Use KMeans to find 2 dominant team colours
-    player_colours = np.array(player_colours)
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
-    kmeans.fit(player_colours)
-    team1_colour = kmeans.cluster_centers_[0]
-    team2_colour = kmeans.cluster_centers_[1]
-    #Convert to HSV for better colour range definition
-    team1_hsv = cv.cvtColor(np.uint8([[team1_colour]]), cv.COLOR_BGR2HSV)[0][0]
-    team2_hsv = cv.cvtColor(np.uint8([[team2_colour]]), cv.COLOR_BGR2HSV)[0][0]
-    #Create colour ranges
-    team1_range = create_colour_range(team1_hsv)
-    team2_range = create_colour_range(team2_hsv)
-    #return team1 range and colour, team2 range and colour 
-    return (team1_colour, team1_range), (team2_colour, team2_range), player_colours
-
-#Create a range for the team colour
-def create_colour_range(hsv_colour, h_tolerance=15, s_tolerance=60, v_tolerance=60):
-    h, s, v = hsv_colour
-    #Convert to int to avoid overflow warning
-    h, s, v = int(h), int(s), int(v)
-    lower = np.array([
-        max(0, h - h_tolerance),
-        max(0, s - s_tolerance),
-        max(0, v - v_tolerance)
-    ], dtype=np.uint8)
-    upper = np.array([
-        min(179, h + h_tolerance),
-        min(255, s + s_tolerance),
-        min(255, v + v_tolerance)
-    ], dtype=np.uint8)
-    return (lower, upper)
-
-#Classify the team player belongs to based on jersey colour
-def classify_team_by_colour(colour_bgr, team1_info, team2_info):
-    if colour_bgr is None:
-        return "Unknown", (128, 128, 128)
-    team1_colour, _ = team1_info
-    team2_colour, _ = team2_info
-    # Calculate Euclidean distance in BGR space
-    dist1 = np.linalg.norm(colour_bgr - team1_colour)
-    dist2 = np.linalg.norm(colour_bgr - team2_colour)
-    if dist1 < dist2:
-        return "Team 1", (0, 0, 255)
-    else:
-        return "Team 2", (255, 0, 0)
-
 def pose_estimation(frame, bbox):
     """Pose Estimation Function
     Used to Identify the keypoints of the body on the players bounding box
     The key points are mapped to the identified position
     Returned is the nose, and ears"""
     
-    # Get the corners pof the bounding box
+    #Get the corners of the bounding box
     x1, y1, x2, y2 = map(int, bbox)
     player_box = frame[y1:y2, x1:x2]
 
+    #Return left and right ear as None
     if player_box.size == 0:
         return None, None
     
@@ -140,25 +45,29 @@ def pose_estimation(frame, bbox):
     #Run the model ove rthe bouning box
     player_pose = pose_model(player_box, verbose=False)
     
+    #Return left and right ear as None
     if player_pose is None or len(player_pose) == 0:
         return None, None
+    #Return left and right ear as None
     if player_pose[0].keypoints is None:
         return None, None
     
     keypoints = player_pose[0].keypoints.xy.cpu().numpy()
     
-    #If there is 
+    #If no keypoints have been detected return None for both left and right ear
     if len(keypoints) == 0:
         return None, None
-    #For 
+    #Take the first 5 keypoints which are of the head dimesnsions 
     for person_kpts in keypoints:
         person_kpts = person_kpts[0:5]
+        #Draw a connecting line between the keypoints
         for start, end in connections:
             if start < len(person_kpts) and end < len(person_kpts):
                 pt1, pt2 = person_kpts[start], person_kpts[end]
                 if pt1[0] > 0 and pt1[1] > 0 and pt2[0] > 0 and pt2[1] > 0:
                     cv.line(frame, (int(pt1[0])+x1, int(pt1[1])+y1),
                             (int(pt2[0])+x1, int(pt2[1])+y1), (245, 66, 230), 3)
+        #Map the keypoint onto the players body
         for pt in person_kpts:
             if pt[0] > 0 and pt[1] > 0:
                 cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
@@ -166,33 +75,13 @@ def pose_estimation(frame, bbox):
     #Return the Left ear and Right ear
     return person_kpts[3], person_kpts[4]
 
-def create_source(first_frame):
-    """A function which allows users to select the source co-ordinates from frame 1"""
-    source_coordinates = []
-    def get_pixel_coordinates(event, x, y, flags, param):
-        if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
-            source_coordinates.append((x, y))
-            cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
-
-    print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
-    param = {'frame': first_frame.copy()}
-    cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
-    cv.setMouseCallback("Frame", get_pixel_coordinates, param)
-    
-    while True:
-        display_frame = param['frame'].copy()
-        cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press Q when done", 
-                  (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv.imshow("Frame", display_frame)
-        key = cv.waitKey(1) & 0xFF
-        # Press Q to exit
-        if key == ord('q'):
-            break
-    
-    cv.destroyAllWindows()
-    print(f"Selected coordinates: {source_coordinates}")
-    print(f"Selected coordinates: {source_coordinates[1]}")
-    print(f"Selected coordinates: {source_coordinates[1][1]}")
+def sort_source(source_coordinates):
+    """A function which sorts the source co-ordinates from frame 1"""
+    #Sort the sourc co-ordinates into following order
+    #Top-Left
+    #Top-Right
+    #Bottom Right
+    #Bottom Left
     source_coordinates = sorted(source_coordinates, key=lambda y: (y[1]))
     if source_coordinates[0][0]>source_coordinates[1][0]:
         swap = source_coordinates[0]
@@ -202,32 +91,39 @@ def create_source(first_frame):
         swap = source_coordinates[2]
         source_coordinates[2] = source_coordinates[3]
         source_coordinates[3] = swap
-    print(f"Selected coordinates: {source_coordinates}")
     return source_coordinates
 
-def read_video():
+def process_video(video_path, source_points):
     """ Main video processing thread"""
 
     #Capture the uploaded video
-    capture = cv.VideoCapture("../dataset/videos/green2.mp4")
-    #Extract team colours from first frame
-    # Get video properties
+    capture = cv.VideoCapture(video_path)
+    
+    #Get video properties
     frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
+    frame_width = int(capture.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(capture.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-    isTrue, first_frame = capture.read()
-    #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
-    team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
-    #Track statistics
-    team_counts = defaultdict(int)
+    #Format output video into mp4v
+    fourcc = cv.VideoWriter_fourcc(*"mp4v")
+    #Set the output of 
+    outPath = 'processed_videos/processed_mp4_video.mp4'
+    #Create an output to write the file to
+    output = cv.VideoWriter(outPath, fourcc, fps/4, (frame_width, frame_height))
+
+    #Risk Result dictionary to store peak risk values for identified IDs
+    risk_result = {}
+
     #Target matrix for Homography
     target_width = 9.144 #meters of 1 10 yard line to a yard line 10 yards apart
     target_height = 26.79192 #meters distance between sideline numbers
 
-    #Get user to select the source co-ordinates
-    source_values = create_source(first_frame)
+    #Sort the source co-ordinates
+    source_values = sort_source(source_points)
     source = np.array(source_values, dtype=np.float32)
     target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
+
     #Create BirdsEyeView object to create homography and calaulate metrics
     transformation = BirdsEyeView(source, target)
     #Process video 
@@ -241,8 +137,6 @@ def read_video():
         current_time = frame_count/fps
         #Process the frame with the custom trained model to detect player, helmet and jersey objects. Track using Bytetrack
         results = model.track(source=frame, show=False, persist=True, verbose=False, conf=0.4, iou=0.4, tracker="../models/Trackers/bytetrack.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.4, iou=0.5, tracker="../models/Trackers/botsort.yaml")  
-        #results = model.track(source=frame, show=False, persist=True, verbose=True, conf=0.6, iou=0.5, tracker="botsort.yaml")  
         result = results[0]
         boxes = result.boxes
         #Transform the points of the bounding box 
@@ -250,8 +144,8 @@ def read_video():
         #Process each detected bounding box
         for i, box in enumerate(boxes):
             cls = int(box.cls[0])    
-            #print(f"Class: {cls} - Name: {result.names[cls]}")
-            if cls == 0: #Helmet class is 0
+            #Track helmet class which is 0
+            if cls == 0:
                 helmet_box = box.xyxy[0].cpu().numpy()
                 x1, y1, x2, y2 = map(int, helmet_box)
                 x,y = transformed_coords[i]
@@ -259,15 +153,17 @@ def read_video():
                 #Assign a lable ID for player identification during video
                 label = f"ID:{track_id}"
                 #Calculate speed, acceleration and G-force of ther player using their transformed X and Y co-ordinates
-                speed = transformation.calculate_speed(track_id, (x, y), current_time)
-                acceleration = transformation.calculate_acceleration(track_id)
+                transformation.calculate_speed(track_id, (x, y), current_time)
+                transformation.calculate_acceleration(track_id)
                 g_force = transformation.calculate_GForce(track_id)            
                 
-                #To get matching helemt and player box
+                #IoU to get matching helemt and player box
                 best_iou = 0
+                best_player_box = None
                 for j, bbox in enumerate(boxes):
                     player_cls = int(bbox.cls[0])  
-                    if player_cls == 2: #Player class is 0
+                    #Track player class which is 2
+                    if player_cls == 2:
                         player_box = bbox.xyxy[0].cpu().numpy()
                         px1, py1, px2, py2 = map(int, player_box)
                         helmet_box = torch.tensor([[x1, y1, x2, y2]], dtype=torch.float)
@@ -275,7 +171,9 @@ def read_video():
                         iou = ops.box_iou(player_box, helmet_box)
                         if iou > best_iou:
                             best_iou = iou
-                            best_player_box = bbox.xyxy[0].cpu().numpy() 
+                            best_player_box = bbox.xyxy[0].cpu().numpy()             
+                if best_player_box is None:
+                    continue
                 left_ear, right_ear = pose_estimation(frame, best_player_box)
                 if left_ear is None or right_ear is None:
                     continue
@@ -285,30 +183,62 @@ def read_video():
                 right_ear = transformation.transform_point(right_ear)
                 
                 #Calculate the angular displacement, angular_velocity and angular_acceleration of the player
-                angle = transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
-                angular_velocity = transformation.calculate_angular_velocity(track_id, current_time)
+                transformation.calculate_angle(track_id, left_ear, right_ear, current_time)
+                transformation.calculate_angular_velocity(track_id, current_time)
                 angular_acceleration = transformation.calculate_angular_acceleration(track_id)
                
                 #Attach label with values for display purposes
                 label = f"ID:{track_id} G-Force:{round(g_force)} G | AA {abs(round(angular_acceleration))}"
-                _, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
-                #Draw Bounding Box
+                risk, box_colour = transformation.calculate_risk(g_force, angular_acceleration)
+                
+                #Draw Bounding Box with labels
                 cv.rectangle(frame,(x1, y1),(x2, y2),box_colour,2)
                 cv.putText(frame,label,(x1, y1 - 5),cv.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),2)  
 
-        #Resize the frame
-        frameResized = rescaleFrame(frame, scale=0.75)
-        key = cv.waitKey(1) & 0xFF
-        cv.imshow("Team Classification", frameResized)
-        #Pause if 'p' is pressed
-        if key  == ord('p'):
-            cv.waitKey(0)
-        #Stop if 'q' is pressed
-        if key == ord('q'):
-            break
-        frame_count+= 1
-    capture.release()
-    cv.destroyAllWindows()
-    
+                #If the track_id is not in the dictionary
+                if track_id not in risk_result:
+                    #Add it to dictionary with intial values
+                    risk_result[track_id] = {
+                        "track_id": track_id, 
+                        "g_force" : round(g_force), 
+                        "angular_acceleration": abs(round(angular_acceleration)), 
+                        "risk": risk}
+                #Else if the track_id is in the dictionary
+                else:
+                    #If the risk is red update the risk and add a pause to the video
+                    if risk == "RED":
+                        risk_result[track_id].update({"risk": risk})
+                        for i in range(int(fps * 2)):
+                            output.write(frame)
+                    #If the risk is Yellow and red is not already recorded for the player update the result to yellow  
+                    elif risk == "YELLOW" and risk_result[track_id].get("risk") != "RED":
+                        risk_result[track_id].update({"risk": risk})
 
-read_video()
+                    #If higher G-force recorded update the value in the dictionary
+                    if risk_result[track_id].get("g_force") < round(g_force):
+                        risk_result[track_id].update({"g_force": round(g_force)}) 
+                    #If higher angular acceleration recorded update the value in the dictionary
+                    if risk_result[track_id].get("angular_acceleration") < abs(round(angular_acceleration)): 
+                            risk_result[track_id].update({"angular_acceleration": abs(round(angular_acceleration))})
+
+
+        #Write the frame to create video
+        output.write(frame)
+           
+        #Increase frame counter for time calculation
+        frame_count+= 1
+
+    #Release capture and output
+    capture.release()
+    output.release()
+
+    #Convert file using ffmeg so that it is displayable in browser as type H.264
+    videoPath = 'processed_videos/processed_video.mp4'
+    subprocess.run([
+        "ffmpeg", "-i", outPath,
+        "-vcodec", "libx264",
+        "-y", videoPath
+    ])
+
+    #Return the video and risk results
+    return videoPath, list(risk_result.values())

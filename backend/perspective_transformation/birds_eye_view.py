@@ -34,6 +34,7 @@ class BirdsEyeView:
         self.angular_velocity = {} 
         self.angular_acceleration = {} 
 
+        #Thresholds
         self.RED_GFORCE = 80
         self.YELLOW_GFORCE = 49
         self.RED_ANGULAR_ACCELERATION = 5875
@@ -84,6 +85,7 @@ class BirdsEyeView:
             new_points, status, _ = cv2.calcOpticalFlowPyrLK(self.previous_grey_frame,current_grey_frame, self.previous_points.reshape(-1, 1, 2), None, **self.lk_params)
             good_new_points = new_points[status==1]
             good_previous_points = self.previous_points[status==1]
+            
             if len(good_new_points) >= 4:
                 #Find the camera movement based on the movement of the keypoints
                 camera_H, _ = cv2.findHomography(good_previous_points, good_new_points, cv2.RANSAC, 5.0)
@@ -123,7 +125,7 @@ class BirdsEyeView:
             return 0.0
         #If 7 frames are available take the posions of the most recent frame and the 7th last frame
         #If there are only 4 take the posions of the most recent frame and the 4th last frame
-        #E;se take last 2 positions
+        #Else take first position in the list and the most recent position
         if len(positions) >= 7:
             old_pos = positions[-7]
             new_pos = positions[-1]
@@ -164,16 +166,7 @@ class BirdsEyeView:
         if len(speed) < 3:
             self.acceleration[track_id].append((0.0))
             return 0.0
-        #If 7 frames are available take the speed of the most recent frame and the 7th last frame
-        #If there are only 3 take the speed of the most recent frame and the 4th last frame
-        #E;se take last 2 speed results
-        # if len(speed) >= 7:
-        #     old_speed = speed[-7]
-        #     new_speed = speed[-1]
-        # if len(speed) >= 3:
-        #     old_speed = speed[-3]
-        #     new_speed = speed[-1]
-        # else:
+        #Take the last 2 speed results to calculate acceleration
         old_speed = speed[-2]
         new_speed = speed[-1]
         #Get the time at both frames and subtract to get time difference
@@ -221,11 +214,9 @@ class BirdsEyeView:
             self.angular_velocity[track_id] = deque(maxlen=15)
         #Convert the angle to a list
         angle = list(self.angle[track_id])
-
         if len(angle) < 2:
             self.angular_velocity[track_id].append((0.0, current_time))
             return 0.0
-        
         #If 7 frames are available take the angular displacement of the most recent frame and the 7th last frame
         #If there are only 4 take the angular displacement of the most recent frame and the 4th last frame
         #Else take last 2 angular displacement results
@@ -243,8 +234,6 @@ class BirdsEyeView:
         if time_diff > 0:
             angle = new_angle[0] - old_angle[0]
             angular_velocity = angle/time_diff
-            if track_id == 295:
-                print(f"AV {angular_velocity}")
             self.angular_velocity[track_id].append((angular_velocity, current_time))
             return angular_velocity
         else: 
@@ -261,9 +250,8 @@ class BirdsEyeView:
         if len(angular_velocity) < 3:
             self.angular_acceleration[track_id].append((0.0))
             return 0.0
-        #If 7 frames are available take the angular velocity of the most recent frame and the 7th last frame
         #If there are only 4 take the angular velocity of the most recent frame and the 4th last frame
-        #Else take last 2 angular velocity results
+        #Else take last 3 angular velocity results
         if len(angular_velocity) >= 4:
             old_angular_velocity = angular_velocity[-4]
             new_angular_velocity = angular_velocity[-1]
@@ -273,20 +261,22 @@ class BirdsEyeView:
         #Get the time at both frames and subtract to get time difference 
         time_diff = new_angular_velocity[1] - old_angular_velocity[1]
         if time_diff > 0:
-            #Calculate the angular acceleration by subtracting the new and old angular velocitys to determine the acceleration that the angle moved
+            #Calculate the angular acceleration by subtracting the new and old angular velocity to determine the acceleration that the angle moved
             angular_acceleration = (new_angular_velocity[0] - old_angular_velocity[0]) / time_diff
             self.angular_acceleration[track_id].append(angular_acceleration)
-            if track_id == 295:
-                print(f"ID: {track_id} AA {angular_acceleration}clw3")
             return angular_acceleration
         else:
             self.angular_acceleration[track_id].append((0.0))
             return 0
         
     def calculate_risk(self, g_force, angular_acceleration):
+        """Function to classify the player risk"""
+        #If either of G-force or angular acceleration is red, the risk will be classifed as red
         if g_force >= self.RED_GFORCE or abs(angular_acceleration) >= self.RED_ANGULAR_ACCELERATION:
             return "RED", (0,0,255)
+        #Else If either of G-force or angular acceleration is yellow, the risk will be classifed as yellow
         elif g_force >= self.YELLOW_GFORCE or abs(angular_acceleration) >= self.YELLOW_ANGULAR_ACCELERATION:
             return "YELLOW", (0,255,255)
+        #Else classify the risk as green
         else:
             return "GREEN", (0,255,0)
