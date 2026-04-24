@@ -26,6 +26,7 @@ function VideoUpload(props: Props) {
   const [hidden, setHidden] = useState(true);
   const [disable, setDisable] = useState(true);
   const [upload, setUploadVisibility] = useState(false);
+  const [warning, setVideoWarningVisibility] = useState(false);
   const [gif, setGifVisability] = useState(true);
 
   //References to video, input and canvas objects
@@ -39,20 +40,9 @@ function VideoUpload(props: Props) {
   //Function to retrieve file information as it is uploaded
   const handleVideo = (event: ChangeEvent<HTMLInputElement>) => {
     const target = event.target as HTMLInputElement & { files: FileList };
-
     //Check to ensure file is of type video
     if (target.files[0].type.startsWith("video/")) {
       setFile(target.files[0]);
-
-      //Set component visibility
-      props.setvideoPlayerVisibility(true);
-      props.setTableVisibility(true);
-      setUploadVisibility(true);
-
-      //Clear Source co-ordinates and video player
-      clearPoints();
-      props.setVideo("");
-
       //Set up Canvas with frame 1 of uploaded video
       if (idVideo.current != null && idCanvas.current != null) {
         const canvas = idCanvas.current;
@@ -60,19 +50,40 @@ function VideoUpload(props: Props) {
         const videoURL = URL.createObjectURL(target.files[0]);
         video.src = videoURL;
         idVideo.current.onloadedmetadata = () => {
-          video.currentTime = 0;
-        };
-        idVideo.current.onseeked = () => {
-          //Unhide canvas and enable drawing
-          setHidden(false);
-          const ctx = canvas.getContext("2d");
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          if (ctx != null) {
-            ctx.drawImage(video, 0, 0);
+          //Check if video duration is greater than 20 seconds
+          if (video.duration > 20) {
+            //Empty the video and display a warning to the user
+            setFile(null);
+            setVideoWarningVisibility(true);
+            return;
           }
+
+          //Set the video to start for frame extraction
+          video.currentTime = 0;
+
+          //Set component visibility
+          props.setvideoPlayerVisibility(true);
+          props.setTableVisibility(true);
+          setUploadVisibility(true);
+          setVideoWarningVisibility(false);
+          //Clear Source co-ordinates and video player
+          clearPoints();
+          props.setVideo("");
+
+          video.onseeked = () => {
+            //Unhide canvas and enable drawing
+            setHidden(false);
+            const ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            if (ctx != null) {
+              ctx.drawImage(video, 0, 0);
+            }
+          };
         };
       }
+    } else {
+      setVideoWarningVisibility(true);
     }
   };
 
@@ -99,9 +110,6 @@ function VideoUpload(props: Props) {
         props.setResults(response.data.risk_results);
         props.setTableVisibility(false);
         setUploadVisibility(false);
-
-        // console.log(response.data.output_path);
-        // console.log(response.data.risk_results);
       })
       .catch((error) => {
         console.log(error.message);
@@ -162,6 +170,7 @@ function VideoUpload(props: Props) {
     setHidden(true);
     setDisable(true);
     clearPoints();
+    setUploadVisibility(false);
   };
 
   //Empty all selected points from canvas
@@ -200,6 +209,11 @@ function VideoUpload(props: Props) {
           <div>
             <p className="text-lg">
               Click here to add your American football video
+            </p>
+          </div>
+          <div>
+            <p className={`${warning ? "text-lg" : "hidden"} `}>
+              Invalid File or Video Duration. Try Again
             </p>
           </div>
         </label>

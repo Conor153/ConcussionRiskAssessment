@@ -2,7 +2,7 @@
 
 This final year capstone project uses computer vision to detect and assess the risk of concussion in American football collisions. A custom trained YOLO11 model detects players, helmets and jerseys in video footage, with a homography transformation applied to calculate real-world speed, acceleration and G-Force from helmet movement. YOLO11 Pose estimation is then used to track the angular orientation of the head across frames, with left and right ear keypoint positions used to calculate angular velocity and acceleration. G-Force and angular acceleration are combined to generate a traffic light concussion risk classification of green, yellow or red.
 
-## Requirments
+## Requirements
 - Python 3.12.3
 - TypeScript
 - Windows 11
@@ -14,7 +14,13 @@ This final year capstone project uses computer vision to detect and assess the r
 
 
 ## Project Set Up
-### 1. Create Virtual Environment
+### 1. Clone Repository
+```
+git clone https://github.com/Conor153/ConcussionRiskAssessment.git
+cd ConcussionRiskAssessment
+```
+
+### 2. Create Virtual Environment
 In Command Prompt or Terminal
 **Windows:**  
 ```python -m venv .venv```
@@ -22,14 +28,14 @@ In Command Prompt or Terminal
 **Linux:**   
 ```python -m venv .venv```
 
-### 2. Activate Environment on Command Prompt with
+### 3. Activate Environment on Command Prompt with
 **Windows:**   
 ```.venv\Scripts\activate.bat```
 
 **Linux:**   
 ```source .venv/bin/activate```
 
-### 3. Deactivate Virtual Environment
+### 4. Deactivate Virtual Environment
 ```deactivate```
 
 ## Package Installation
@@ -64,12 +70,40 @@ pip3 install torch-2.6.0+rocm6.4.2.git76481f7c-cp312-cp312-linux_x86_64.whl torc
 ```
 pip install -r requirements.txt
 ```
-
 --- 
+
+### 4. Install React dependencies
+```
+npm install axios
+npm install -D tailwindcss@3
+```
+--- 
+
+## How to run
+### 1. Start Uvicorn server
+```
+cd backend/
+uvicorn main:app --reload
+```
+
+### 2. Start frontend
+```
+cd frontend/
+cd vite-project/
+npm install
+npm run dev
+```
+
+### 3. Open URL in web browser
+```
+http://localhost:5173
+```
+
+---
 
 ## Model Training 
 
-### 1. Downlaod American Football Dataset
+### 1. Download American Football Dataset
 - Option 1
 
 Download zipped folder from RoboFlow   
@@ -109,7 +143,7 @@ yolo detect train data=data.yaml model=yolo11n.pt epochs=10 imgsz=640 device=cpu
 ```
 
 
-# Risk Classification
+## Risk Classification
 
 | Metric | Green | Yellow | Red |
 |--------|-------|--------|-----|
@@ -124,7 +158,6 @@ To run unit tests navigate to backend directory
 ```
 python testing.py
 ```
-
 ### 2. Model Results
 | Metric        | AMD GPU YOLO11S | AMD GPU YOLO11N | Google CoLab YOLO11N | AMD Ryzen 5 7600 Series CPU YOLO11N|
 |--------------|-----------------|-----------------|----------------------|---------|
@@ -135,3 +168,68 @@ python testing.py
 | Epochs        | 50              | 50              | 50                   | 10      |
 | Time          | 0.234           | 0.143           | 0.459                | 0.296   |
 
+## Project Structure
+```
+ConcussionRiskAssessment
+├── backend
+│   ├── main.py
+│   ├── perspective_transformation
+│   │   ├── birds_eye_view.py
+│   │   └── __init__.py
+│   ├── processed_videos
+│   ├── requirements.txt
+│   ├── testing.py
+│   ├── uploads
+│   └── utilities.py
+├── dataset
+│   └── videos
+├── frontend
+│   └── vite-project
+│       ├── index.html
+│       ├── package.json
+│       ├── package-lock.json
+│       ├── postcss.config.js
+│       ├── public
+│       │   ├── loading.gif
+│       │   └── vite.svg
+│       ├── src
+│       │   ├── App.css
+│       │   ├── App.tsx
+│       │   ├── assets
+│       │   ├── Footer.tsx
+│       │   ├── Header.tsx
+│       │   ├── index.css
+│       │   ├── main.tsx
+│       │   ├── Table.tsx
+│       │   ├── VideoPlayer.tsx
+│       │   ├── VideoUpload.tsx
+│       │   └── vite-env.d.ts
+│       ├── tailwind.config.js
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       └── vite.config.ts
+├── models
+│   ├── AMDCPUv1TrainYOLON
+│   │   └── weights
+│   │       └── AMDCPUv1TrainYOLOn.pt
+│   ├── AMDGPUv1TrainYOLON
+│   │   └── weights
+│   │       └── AMDGPUv1TrainYOLOn.pt
+│   ├── AMDGPUv2TrainYOLOS
+│   │   └── weights
+│   │       └── AMDGPUTrainYOLOs.pt
+│   ├── CoLab_T4
+│   │   ├── CoLab_T4GPU.pt
+│   │   └── TrainCustomDataSetYolo11.ipynb
+│   ├── PoseDetection
+│   │   └── yolo11s-pose.pt
+│   ├── README.dataset.txt
+│   ├── README.roboflow.txt
+│   └── Trackers
+│       ├── botsort.yaml
+│       └── bytetrack.yaml
+└── README.md
+```
+
+## Disclaimer
+This system is intended for research purposes only and should not be used as a substitute for medical diagnosis

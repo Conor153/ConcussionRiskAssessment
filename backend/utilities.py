@@ -26,104 +26,6 @@ if torch.cuda.is_available():
     pose_model.to('cuda:0')
 print(f"Model device: {model.device}, Pose device: {pose_model.device}")
 
-#Function to resize the window frame
-def rescaleFrame(frame, scale=0.75):
-    width = int(frame.shape[1] * scale)
-    height = int(frame.shape[0] * scale)
-    dimensions = (width, height)
-    return cv.resize(frame, dimensions, interpolation=cv.INTER_AREA)
-
-#Function to get the domiante colour of the players jersey
-def get_dominant_colour(frame, bbox):
-    #Get the co-ordinates of the box
-    x1, y1, x2, y2 = map(int, bbox)
-    #Ensure coordinates are within bounds
-    x1 = max(0, x1)
-    y1 = max(0, y1)
-    x2 = min(frame.shape[1], x2)
-    y2 = min(frame.shape[0], y2)
-    #Extract the player region
-    playerBox = frame[y1:y2, x1:x2]
-    #Get the height of the players box
-    height = playerBox.shape[0]
-    #Get the upperpart of the player body to get jersey colour
-    torso = playerBox[int(height*0.30):int(height*0.5), :]
-    #Convert the jersey colour to HSV
-    hsv_roi = cv.cvtColor(torso, cv.COLOR_BGR2HSV)
-    #Create mask to exclude green colours for grass
-    lower_green = np.array([35, 40, 40])
-    upper_green = np.array([85, 255, 255])
-    green_mask = cv.inRange(hsv_roi, lower_green, upper_green)
-    #Exclude colour green
-    mask = cv.bitwise_not(green_mask)
-    #Calculate mean colour
-    if cv.countNonZero(mask) > 0:
-        avg_colour_bgr = cv.mean(torso, mask=mask)[:3]
-    else:
-        avg_colour_bgr = cv.mean(torso)[:3]
-    #Return the average colour
-    return np.array(avg_colour_bgr)
-
-#Extract the team colours
-def extract_team_colours_from_frame(frame, model):
-    results = model(frame)
-    result = results[0]
-    boxes = result.boxes
-    player_colours = []
-    #For all boxes get the dominant colour
-    for box in boxes:
-        cls = int(box.cls[0])
-        if cls == 1:#Jersey
-            bbox = box.xyxy[0].cpu().numpy()
-            colour = get_dominant_colour(frame, bbox)
-            if colour is not None:
-                player_colours.append(colour)
-    #Use KMeans to find 2 dominant team colours
-    player_colours = np.array(player_colours)
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
-    kmeans.fit(player_colours)
-    team1_colour = kmeans.cluster_centers_[0]
-    team2_colour = kmeans.cluster_centers_[1]
-    #Convert to HSV for better colour range definition
-    team1_hsv = cv.cvtColor(np.uint8([[team1_colour]]), cv.COLOR_BGR2HSV)[0][0]
-    team2_hsv = cv.cvtColor(np.uint8([[team2_colour]]), cv.COLOR_BGR2HSV)[0][0]
-    #Create colour ranges
-    team1_range = create_colour_range(team1_hsv)
-    team2_range = create_colour_range(team2_hsv)
-    #return team1 range and colour, team2 range and colour 
-    return (team1_colour, team1_range), (team2_colour, team2_range), player_colours
-
-#Create a range for the team colour
-def create_colour_range(hsv_colour, h_tolerance=15, s_tolerance=60, v_tolerance=60):
-    h, s, v = hsv_colour
-    #Convert to int to avoid overflow warning
-    h, s, v = int(h), int(s), int(v)
-    lower = np.array([
-        max(0, h - h_tolerance),
-        max(0, s - s_tolerance),
-        max(0, v - v_tolerance)
-    ], dtype=np.uint8)
-    upper = np.array([
-        min(179, h + h_tolerance),
-        min(255, s + s_tolerance),
-        min(255, v + v_tolerance)
-    ], dtype=np.uint8)
-    return (lower, upper)
-
-#Classify the team player belongs to based on jersey colour
-def classify_team_by_colour(colour_bgr, team1_info, team2_info):
-    if colour_bgr is None:
-        return "Unknown", (128, 128, 128)
-    team1_colour, _ = team1_info
-    team2_colour, _ = team2_info
-    # Calculate Euclidean distance in BGR space
-    dist1 = np.linalg.norm(colour_bgr - team1_colour)
-    dist2 = np.linalg.norm(colour_bgr - team2_colour)
-    if dist1 < dist2:
-        return "Team 1", (0, 0, 255)
-    else:
-        return "Team 2", (255, 0, 0)
-
 def pose_estimation(frame, bbox):
     """Pose Estimation Function
     Used to Identify the keypoints of the body on the players bounding box
@@ -152,18 +54,20 @@ def pose_estimation(frame, bbox):
     
     keypoints = player_pose[0].keypoints.xy.cpu().numpy()
     
-    #If there is 
+    #If no keypoints have been detected return None for both left and right ear
     if len(keypoints) == 0:
         return None, None
-    #For 
+    #Take the first 5 keypoints which are of the head dimesnsions 
     for person_kpts in keypoints:
         person_kpts = person_kpts[0:5]
+        #Draw a connecting line between the keypoints
         for start, end in connections:
             if start < len(person_kpts) and end < len(person_kpts):
                 pt1, pt2 = person_kpts[start], person_kpts[end]
                 if pt1[0] > 0 and pt1[1] > 0 and pt2[0] > 0 and pt2[1] > 0:
                     cv.line(frame, (int(pt1[0])+x1, int(pt1[1])+y1),
                             (int(pt2[0])+x1, int(pt2[1])+y1), (245, 66, 230), 3)
+        #Map the keypoint onto the players body
         for pt in person_kpts:
             if pt[0] > 0 and pt[1] > 0:
                 cv.circle(frame, (int(pt[0])+x1, int(pt[1])+y1), 5, (245, 117, 66), -1)
@@ -173,29 +77,6 @@ def pose_estimation(frame, bbox):
 
 def sort_source(source_coordinates):
     """A function which sorts the source co-ordinates from frame 1"""
-    # source_coordinates = []
-    # def get_pixel_coordinates(event, x, y, flags, param):
-    #     if event == cv.EVENT_LBUTTONDOWN:  # left mouse click
-    #         source_coordinates.append((x, y))
-    #         cv.circle(param['frame'], (x, y), 5, (0, 0, 255), -1)
-
-    # print("\nClick 4 corners of the field. Press ESC when done (need 4 points)")
-    # param = {'frame': first_frame.copy()}
-    # cv.namedWindow("Frame", cv.WINDOW_GUI_EXPANDED)
-    # cv.setMouseCallback("Frame", get_pixel_coordinates, param)
-    
-    # while True:
-    #     display_frame = param['frame'].copy()
-    #     cv.putText(display_frame, f"Points: {len(source_coordinates)}/4 - Press Q when done", 
-    #               (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #     cv.imshow("Frame", display_frame)
-    #     key = cv.waitKey(1) & 0xFF
-    #     # Press Q to exit
-    #     if key == ord('q'):
-    #         break
-    
-    # cv.destroyAllWindows()
-
     #Sort the sourc co-ordinates into following order
     #Top-Left
     #Top-Right
@@ -213,13 +94,11 @@ def sort_source(source_coordinates):
     return source_coordinates
 
 def process_video(video_path, source_points):
-#def process_video():
     """ Main video processing thread"""
 
     #Capture the uploaded video
     capture = cv.VideoCapture(video_path)
-    #capture = cv.VideoCapture("/home/conor/Desktop/ConcussionRiskAssessment/dataset/videos/green.mp4")
-
+    
     #Get video properties
     frame_count = 0
     fps = capture.get(cv.CAP_PROP_FPS)
@@ -233,11 +112,6 @@ def process_video(video_path, source_points):
     #Create an output to write the file to
     output = cv.VideoWriter(outPath, fourcc, fps/4, (frame_width, frame_height))
 
-    #isTrue, first_frame = capture.read()
-    #Get the dominate colours of player jerseys to allocate object to team 1 or team 2
-    #team1_info, team2_info, all_colours = extract_team_colours_from_frame(first_frame, model)
-    #Track statistics
-
     #Risk Result dictionary to store peak risk values for identified IDs
     risk_result = {}
 
@@ -247,7 +121,6 @@ def process_video(video_path, source_points):
 
     #Sort the source co-ordinates
     source_values = sort_source(source_points)
-    print(source_values)
     source = np.array(source_values, dtype=np.float32)
     target = np.array([[0, 0], [target_width, 0], [target_width, target_height], [0, target_height]], dtype=np.float32)
 
@@ -348,23 +221,10 @@ def process_video(video_path, source_points):
                     if risk_result[track_id].get("angular_acceleration") < abs(round(angular_acceleration)): 
                             risk_result[track_id].update({"angular_acceleration": abs(round(angular_acceleration))})
 
-                #track_id, g_force, angular_acceleration, risk
-
-        #Resize the frame
-        #frameResized = rescaleFrame(frame, scale=0.75)
-        #key = cv.waitKey(1) & 0xFF
-        #cv.imshow("Team Classification", frameResized)
 
         #Write the frame to create video
         output.write(frame)
            
-        #Pause if 'p' is pressed
-        # if key  == ord('p'):
-        #     cv.waitKey(0)
-        #Stop if 'q' is pressed
-        # if key == ord('q'):
-        #     break
-
         #Increase frame counter for time calculation
         frame_count+= 1
 
