@@ -26,7 +26,7 @@ In Command Prompt or Terminal
 ```python -m venv .venv```
 
 **Linux:**   
-```python -m venv .venv```
+```python3 -m venv .venv```
 
 ### 3. Activate Environment on Command Prompt with
 **Windows:**   
@@ -66,16 +66,15 @@ pip3 uninstall torch torchvision pytorch-triton-rocm
 pip3 install torch-2.6.0+rocm6.4.2.git76481f7c-cp312-cp312-linux_x86_64.whl torchvision-0.21.0+rocm6.4.2.git4040d51f-cp312-cp312-linux_x86_64.whl torchaudio-2.6.0+rocm6.4.2.gitd8831425-cp312-cp312-linux_x86_64.whl pytorch_triton_rocm-3.2.0+rocm6.4.2.git7e948ebf-cp312-cp312-linux_x86_64.whl
 ```
 
-### 3. Install Python dependencies
+### 3. Install Python dependencies (in backend directory)
 ```
 pip install -r requirements.txt
 ```
 --- 
 
-### 4. Install React dependencies
+### 4. Install React dependencies (in frontend/vite-project directory)
 ```
-npm install axios
-npm install -D tailwindcss@3
+npm install
 ```
 --- 
 
@@ -83,6 +82,7 @@ npm install -D tailwindcss@3
 ### 1. Start Uvicorn server
 ```
 cd backend/
+pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
